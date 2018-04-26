@@ -5,6 +5,8 @@
 #include <cstring>
 
 using namespace std;
+
+//D(n) = n! [(-1)^2/2! + … + (-1)^(n-1)/(n-1)! + (-1)^n/n!].
 int main()
 {
 	long long table[21] = { 0,0,1 };
