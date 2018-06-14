@@ -17,8 +17,7 @@ vector<node> eg[101];
 int dist[101], n;
 void dfs(int s)
 {
-	int i;
-	for (i = 1; i <= n; i++) { 
+	for (int i = 1; i <= n; i++) { 
 		dist[i] = INF; 
 	}
 	dist[s] = 0;
