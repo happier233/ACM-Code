@@ -14,8 +14,8 @@ struct node {
 };
 
 vector<node> eg[101];
-int dist[101], n;
-void dfs(int s)
+int dist[101];
+void dfs(int s, int n)
 {
 	int i;
 	for (i = 1; i <= n; i++) { 
