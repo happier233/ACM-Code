@@ -12,9 +12,10 @@ struct node {
     }
 };
 
-vector<node> eg[101];
-int dist[101];
-vector<int> path[101];
+#define N_MAX 150
+vector<node> eg[N_MAX];
+int dist[N_MAX];
+vector<int> path[N_MAX];
 
 void dfs(int s, int n) {
     for (int i = 1; i <= n; i++) {
