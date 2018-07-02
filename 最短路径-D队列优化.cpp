@@ -24,6 +24,7 @@ void dfs(int s, int n) {
     dist[s] = 0;
     priority_queue<node> list;
     list.push(node(s, dist[s]));
+	path[s].push_back(s);
     while (!list.empty()) {
         node x = list.top();
         list.pop();
