@@ -45,7 +45,7 @@ Mat operator * (Mat a, Mat b) {
 Mat operator ^ (Mat a, int k) {
 	long long n = a.n;
 	Mat c(n);
-	
+	c.init();
 	for (; k; k >>= 1) {
 		if (k & 1)   c = c * a;
 		a = a * a;
