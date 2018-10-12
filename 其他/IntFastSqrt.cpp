@@ -1,5 +1,4 @@
-int sqrtI(int t)
-{
+int sqrtI(int t){
 	int min = 0;
 	int max = t;
 	while (min != max && min + 1 != max) {
