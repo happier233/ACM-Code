@@ -1,9 +1,9 @@
-const int N = 100005;
+const int N = 50005;
 
 struct SegTree {
     ll c[N];
-    ll ans[N * 4];
-    ll laz[N * 4];
+    ll ans[N << 2];
+    ll laz[N << 2];
 
     void init(int n) {
         memset(c, 0, sizeof(ll) * (n + 1));
@@ -21,9 +21,9 @@ struct SegTree {
     }
 
     void build(int x, int y, int k) {
+        laz[k] = 0;
         if (x == y) {
             ans[k] = c[x];
-            laz[k] = 0;
             return;
         }
         int m = (x + y) >> 1;
@@ -45,16 +45,14 @@ struct SegTree {
         up(k);
     }
 
-    void updateAll(int x, int y, int k) {
-        if (x == y) {
-            ans[k] += laz[k];
-            laz[k] = 0;
-            c[x] = ans[k];
-            return;
+    ll query(int x, int y, int k, int l, int r) {
+        if (x == l && y == r) {
+            return ans[k] + laz[k];
         }
-        push(k);
         int m = (x + y) >> 1;
-        updateAll(x, m, k << 1);
-        updateAll(m + 1, y, k << 1 | 1);
+        push(k);
+        if (r <= m) return query(x, m, k << 1, l, r);
+        else if (l > m) return query(m + 1, y, k << 1 | 1, l, r);
+        else return query(x, m, k << 1, l, m) + query(m + 1, y, k << 1 | 1, m + 1, r);
     }
 };
