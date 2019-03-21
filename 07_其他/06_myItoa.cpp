@@ -1,6 +1,6 @@
-char * my_itoa(int value, char* result, int base = 10);
+char * myItoa(int value, char* result, int base = 10);
 
-char * my_itoa(int value, char* result, int base) {
+char * myItoa(int value, char* result, int base) {
 	// check that the base if valid  
 
 	if (base < 2 || base > 16) { *result = 0; return result; }
