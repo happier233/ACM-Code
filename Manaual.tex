@@ -503,6 +503,7 @@ TreeNode<T> *createBSTree(T *list, int len) {
 }\end{lstlisting}
 \subsection{pbds-bbtree}
 \begin{lstlisting}
+// RBTree 红黑树
 #include <ext/pb_ds/tree_policy.hpp>
 #include <ext/pb_ds/assoc_container.hpp>
 // 红黑树
@@ -527,7 +528,13 @@ upper_bound(p);
 a.join(b);
 // 分割 key小于等于v的元素属于a，其余的属于b
 a.split(v, b);
-\end{lstlisting}
+
+// 优先队列
+#include <ext/pb_ds/priority_queue.hpp>
+#include <ext/pb_ds/assoc_container.hpp>
+// 操作类似于stl的优先队列
+typedef __gnu_pbds::priority_queue<node, greater<node>, __gnu_pbds::thin_heap_tag> heap;
+heap::point_iterator; // 指向元素的指针\end{lstlisting}
 \subsection{树状数组}
 \begin{lstlisting}
 const int N = 1000005;
@@ -540,10 +547,9 @@ struct BITree {
         this->n = n;
     }
 
-    int change(int pos, ll v) {
+    void change(int pos, ll v) {
         for (int i = pos; i < n; i += i & (-i))
             c[i] += v;
-        return 0;
     }
 
     ll query(int x) {
@@ -557,6 +563,10 @@ struct BITree {
 \begin{lstlisting}
 const int N = 2005;
 
+inline int lowbit(const int &x) {
+        return x & -x;
+    }
+
 struct TdBITree {
     int n, m;
     ll c[N][N];
@@ -565,10 +575,6 @@ struct TdBITree {
         this->n = n;
         this->m = m;
         memset(c, 0, sizeof(c))
-    }
-
-    inline int lowbit(const int &x) {
-        return x & -x;
     }
 
     void init(int n, int m, ll v) {
@@ -581,11 +587,10 @@ struct TdBITree {
         }
     }
 
-    int change(int x, int y, ll v) {
+    void change(int x, int y, ll v) {
         for (int i = x; i <= n; i += lowbit(i))
             for (int j = y; j <= m; j += lowbit(j))
                 c[i][j] += v;
-        return 0;
     }
 
     ll query(int x, int y) {
@@ -827,7 +832,7 @@ void solve() {
 
 \end{lstlisting}
 \clearpage\section{图论}
-\subsection{Dijkstra}
+\subsection{Graph}
 \begin{lstlisting}
 struct node {
     int e, v, nxt;
@@ -856,8 +861,9 @@ struct Graph {
         eg[cnt] = node(y, v, head[x]);
         head[x] = cnt++;
     }
-} gh;
-
+} gh;\end{lstlisting}
+\subsection{Dijkstra}
+\begin{lstlisting}
 int dist[N];
 int path[N];
 
@@ -890,7 +896,7 @@ typedef __gnu_pbds::priority_queue<node, greater<node>> heap;
 heap::point_iterator its[N];
 int cnt[N];
 
-void dfs(int s, int n) {
+void bfs(int s, int n) {
     n++;
     rep(i, 0, n) dist[i] = INF;
     memset(cnt, 0, sizeof(int) * n);
@@ -1181,6 +1187,12 @@ void getSG(int n) {
         }
     }
 }
+
+// Auti-nim 反尼姆游戏
+// 当先拿完所有石子时候输
+// 当如下条件时，先手必胜
+// ①：所有堆的石子数均=1，且有偶数堆。 
+// ②：至少有一个堆的石子数>1，且石子堆的异或和≠0。
 \end{lstlisting}
 \clearpage\section{分治}
 \subsection{IntegerFastPower}

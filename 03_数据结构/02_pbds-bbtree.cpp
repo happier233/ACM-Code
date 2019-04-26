@@ -1,3 +1,4 @@
+// RBTree 红黑树
 #include <ext/pb_ds/tree_policy.hpp>
 #include <ext/pb_ds/assoc_container.hpp>
 // 红黑树
@@ -22,3 +23,10 @@ upper_bound(p);
 a.join(b);
 // 分割 key小于等于v的元素属于a，其余的属于b
 a.split(v, b);
+
+// 优先队列
+#include <ext/pb_ds/priority_queue.hpp>
+#include <ext/pb_ds/assoc_container.hpp>
+// 操作类似于stl的优先队列
+typedef __gnu_pbds::priority_queue<node, greater<node>, __gnu_pbds::thin_heap_tag> heap;
+heap::point_iterator; // 指向元素的指针

@@ -8,10 +8,9 @@ struct BITree {
         this->n = n;
     }
 
-    int change(int pos, ll v) {
+    void change(int pos, ll v) {
         for (int i = pos; i < n; i += i & (-i))
             c[i] += v;
-        return 0;
     }
 
     ll query(int x) {
