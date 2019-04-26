@@ -1,13 +1,17 @@
+const int N = 2005;
+
 struct TdBITree {
     int n, m;
     ll c[N][N];
-    ll p[N][N];
 
     void init(int n, int m) {
         this->n = n;
         this->m = m;
-        memset(c, 0, sizeof(c));
-        memset(p, 0, sizeof(p));
+        memset(c, 0, sizeof(c))
+    }
+
+    inline int lowbit(const int &x) {
+        return x & -x;
     }
 
     void init(int n, int m, ll v) {
@@ -15,14 +19,12 @@ struct TdBITree {
         this->m = m;
         rep(x, 1, N) {
             rep(y, 1, N) {
-                p[x][y] = v;
                 c[x][y] = (x * y + (x - lowbit(x)) * (y - lowbit(y)) - x * (y - lowbit(y)) - (x - lowbit(x)) * y) * v;
             }
         }
     }
 
     int change(int x, int y, ll v) {
-        p[x][y] += v;
         for (int i = x; i <= n; i += lowbit(i))
             for (int j = y; j <= m; j += lowbit(j))
                 c[i][j] += v;

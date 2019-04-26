@@ -10,27 +10,10 @@ inline bool scan_d (T &ret) {
     ret *= sgn;
     return 1;
 }
-inline void out (int x) {
-	if (x < 0) {
-		putchar('-');
-		x = -x;
-	}
+//适用于正负整数
+template <class T>
+inline void outU (T x) {
+	if (x < 0)  putchar('-'), x = -x;
     if (x > 9) out (x / 10);
     putchar (x % 10 + '0');
-}
-inline void out(int x) {
-	if (x < 0) {
-		putchar('-');
-		x = -x;
-	}
-	char list[100];
-	int now = 0;
-	while (x > 9) {
-		list[++now] = (x % 10 + '0');
-		x /= 10;
-	}
-	putchar(x + '0');
-	while (now) {
-		putchar(list[now--]);
-	}
 }

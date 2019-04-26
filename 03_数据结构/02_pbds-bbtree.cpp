@@ -1,9 +1,10 @@
+#include <ext/pb_ds/tree_policy.hpp>
+#include <ext/pb_ds/assoc_container.hpp>
 // 红黑树
-tree<int, null_type, less<int>, rb_tree_tag, tree_order_statistics_node_update> t;
+__gnu_pbds::tree<int, null_type, less<int>, rb_tree_tag, tree_order_statistics_node_update> t;
 // null_type无映射(低版本g++为null_mapped_type)
 // 类似multiset
-tree<int, null_type, less_equal<int>, rb_tree_tag, tree_order_statistics_node_update> t;
-
+__gnu_pbds::tree<int, null_type, less_equal<int>, rb_tree_tag, tree_order_statistics_node_update> t;
 find_by_order(size_t order);
 // 结点更新
 tree_order_statistics_node_update

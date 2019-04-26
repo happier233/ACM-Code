@@ -1,4 +1,3 @@
-
 // base and base_digits must be consistent
 constexpr int base = 1000000000;
 constexpr int base_digits = 9;
@@ -13,14 +12,13 @@ struct bigint {
 
     bigint() : sign(1) {}
 
-    bigint(long long v) { *this = v; }
+    bigint(ll v) { *this = v; }
 
-    bigint &operator=(long long v) {
+    bigint &operator=(ll v) {
         sign = v < 0 ? -1 : 1;
         v *= sign;
         z.clear();
-        for (; v > 0; v = v / base)
-            z.push_back((int) (v % base));
+        for (; v > 0; v = v / base) z.push_back((int) (v % base));
         return *this;
     }
 
@@ -42,9 +40,7 @@ struct bigint {
         return *this;
     }
 
-    friend bigint operator+(bigint a, const bigint &b) {
-        return a += b;
-    }
+    friend bigint operator+(bigint a, const bigint &b) { return a += b; }
 
     bigint &operator-=(const bigint &other) {
         if (sign == other.sign) {
@@ -71,12 +67,10 @@ struct bigint {
     }
 
     bigint &operator*=(int v) {
-        if (v < 0)
-            sign = -sign, v = -v;
+        if (v < 0) sign = -sign, v = -v;
         for (int i = 0, carry = 0; i < z.size() || carry; ++i) {
-            if (i == z.size())
-                z.push_back(0);
-            long long cur = (long long) z[i] * v + carry;
+            if (i == z.size()) z.push_back(0);
+            ll cur = (ll) z[i] * v + carry;
             carry = (int) (cur / base);
             z[i] = (int) (cur % base);
         }
@@ -84,9 +78,7 @@ struct bigint {
         return *this;
     }
 
-    bigint operator*(int v) const {
-        return bigint(*this) *= v;
-    }
+    bigint operator*(int v) const { return bigint(*this) *= v; }
 
     friend pair<bigint, bigint> divmod(const bigint &a1, const bigint &b1) {
         int norm = base / (b1.z.back() + 1);
@@ -100,10 +92,9 @@ struct bigint {
             r += a.z[i];
             int s1 = b.z.size() < r.z.size() ? r.z[b.z.size()] : 0;
             int s2 = b.z.size() - 1 < r.z.size() ? r.z[b.z.size() - 1] : 0;
-            int d = (int) (((long long) s1 * base + s2) / b.z.back());
+            int d = (int) (((ll) s1 * base + s2) / b.z.back());
             r -= b * d;
-            while (r < 0)
-                r += b, --d;
+            while (r < 0) r += b, --d;
             q.z[i] = d;
         }
 
@@ -116,8 +107,7 @@ struct bigint {
 
     friend bigint sqrt(const bigint &a1) {
         bigint a = a1;
-        while (a.z.empty() || a.z.size() % 2 == 1)
-            a.z.push_back(0);
+        while (a.z.empty() || a.z.size() % 2 == 1) a.z.push_back(0);
 
         int n = a.z.size();
 
@@ -125,10 +115,9 @@ struct bigint {
         int norm = base / (firstDigit + 1);
         a *= norm;
         a *= norm;
-        while (a.z.empty() || a.z.size() % 2 == 1)
-            a.z.push_back(0);
+        while (a.z.empty() || a.z.size() % 2 == 1) a.z.push_back(0);
 
-        bigint r = (long long) a.z[n - 1] * base + a.z[n - 2];
+        bigint r = (ll) a.z[n - 1] * base + a.z[n - 2];
         firstDigit = (int) ::sqrt((double) a.z[n - 1] * base + a.z[n - 2]);
         int q = firstDigit;
         bigint res;
@@ -136,20 +125,19 @@ struct bigint {
         for (int j = n / 2 - 1; j >= 0; j--) {
             for (;; --q) {
                 bigint r1 = (r - (res * 2 * base + q) * q) * base * base +
-                            (j > 0 ? (long long) a.z[2 * j - 1] * base + a.z[2 * j - 2] : 0);
+                            (j > 0 ? (ll) a.z[2 * j - 1] * base + a.z[2 * j - 2] : 0);
                 if (r1 >= 0) {
                     r = r1;
                     break;
                 }
             }
-            res *= base;
-            res += q;
+            (res *= base) += q;
 
             if (j > 0) {
                 int d1 = res.z.size() + 2 < r.z.size() ? r.z[res.z.size() + 2] : 0;
                 int d2 = res.z.size() + 1 < r.z.size() ? r.z[res.z.size() + 1] : 0;
                 int d3 = res.z.size() < r.z.size() ? r.z[res.z.size()] : 0;
-                q = (int) (((long long) d1 * base * base + (long long) d2 * base + d3) / (firstDigit * 2));
+                q = (int) (((ll) d1 * base * base + (ll) d2 * base + d3) / (firstDigit * 2));
             }
         }
 
@@ -166,10 +154,9 @@ struct bigint {
     }
 
     bigint &operator/=(int v) {
-        if (v < 0)
-            sign = -sign, v = -v;
+        if (v < 0) sign = -sign, v = -v;
         for (int i = (int) z.size() - 1, rem = 0; i >= 0; --i) {
-            long long cur = z[i] + rem * (long long) base;
+            ll cur = z[i] + rem * (ll) base;
             z[i] = (int) (cur / v);
             rem = (int) (cur % v);
         }
@@ -182,22 +169,19 @@ struct bigint {
     }
 
     int operator%(int v) const {
-        if (v < 0)
-            v = -v;
+        if (v < 0) v = -v;
         int m = 0;
         for (int i = (int) z.size() - 1; i >= 0; --i)
-            m = (int) ((z[i] + m * (long long) base) % v);
+            m = (int) ((z[i] + m * (ll) base) % v);
         return m * sign;
     }
 
     bigint &operator*=(const bigint &v) {
-        *this = *this * v;
-        return *this;
+        return *this = *this * v;;
     }
 
     bigint &operator/=(const bigint &v) {
-        *this = *this / v;
-        return *this;
+        return *this = *this / v;
     }
 
     bool operator<(const bigint &v) const {
@@ -211,31 +195,19 @@ struct bigint {
         return false;
     }
 
-    bool operator>(const bigint &v) const {
-        return v < *this;
-    }
+    bool operator>(const bigint &v) const { return v < *this; }
 
-    bool operator<=(const bigint &v) const {
-        return !(v < *this);
-    }
+    bool operator<=(const bigint &v) const { return !(v < *this); }
 
-    bool operator>=(const bigint &v) const {
-        return !(*this < v);
-    }
+    bool operator>=(const bigint &v) const { return !(*this < v); }
 
-    bool operator==(const bigint &v) const {
-        return !(*this < v) && !(v < *this);
-    }
+    bool operator==(const bigint &v) const { return !(*this < v) && !(v < *this); }
 
-    bool operator!=(const bigint &v) const {
-        return *this < v || v < *this;
-    }
+    bool operator!=(const bigint &v) const { return *this < v || v < *this; }
 
     void trim() {
-        while (!z.empty() && z.back() == 0)
-            z.pop_back();
-        if (z.empty())
-            sign = 1;
+        while (!z.empty() && z.back() == 0) z.pop_back();
+        if (z.empty()) sign = 1;
     }
 
     bool isZero() const {
@@ -243,8 +215,7 @@ struct bigint {
     }
 
     friend bigint operator-(bigint v) {
-        if (!v.z.empty())
-            v.sign = -v.sign;
+        if (!v.z.empty()) v.sign = -v.sign;
         return v;
     }
 
@@ -252,8 +223,8 @@ struct bigint {
         return sign == 1 ? *this : -*this;
     }
 
-    long long longValue() const {
-        long long res = 0;
+    ll longValue() const {
+        ll res = 0;
         for (int i = (int) z.size() - 1; i >= 0; i--)
             res = res * base + z[i];
         return res * sign;
@@ -272,8 +243,7 @@ struct bigint {
         z.clear();
         int pos = 0;
         while (pos < s.size() && (s[pos] == '-' || s[pos] == '+')) {
-            if (s[pos] == '-')
-                sign = -sign;
+            if (s[pos] == '-') sign = -sign;
             ++pos;
         }
         for (int i = (int) s.size() - 1; i >= pos; i -= base_digits) {
@@ -302,12 +272,12 @@ struct bigint {
     }
 
     static vector<int> convert_base(const vector<int> &a, int old_digits, int new_digits) {
-        vector<long long> p(max(old_digits, new_digits) + 1);
+        vector<ll> p(max(old_digits, new_digits) + 1);
         p[0] = 1;
         for (int i = 1; i < p.size(); i++)
             p[i] = p[i - 1] * 10;
         vector<int> res;
-        long long cur = 0;
+        ll cur = 0;
         int cur_digits = 0;
         for (int v : a) {
             cur += v * p[cur_digits];
@@ -319,12 +289,11 @@ struct bigint {
             }
         }
         res.push_back((int) cur);
-        while (!res.empty() && res.back() == 0)
-            res.pop_back();
+        while (!res.empty() && res.back() == 0) res.pop_back();
         return res;
     }
 
-    typedef vector<long long> vll;
+    typedef vector<ll> vll;
 
     static vll karatsubaMultiply(const vll &a, const vll &b) {
         int n = a.size();
@@ -345,23 +314,16 @@ struct bigint {
         vll a1b1 = karatsubaMultiply(a1, b1);
         vll a2b2 = karatsubaMultiply(a2, b2);
 
-        for (int i = 0; i < k; i++)
-            a2[i] += a1[i];
-        for (int i = 0; i < k; i++)
-            b2[i] += b1[i];
+        for (int i = 0; i < k; i++) a2[i] += a1[i];
+        for (int i = 0; i < k; i++) b2[i] += b1[i];
 
         vll r = karatsubaMultiply(a2, b2);
-        for (int i = 0; i < a1b1.size(); i++)
-            r[i] -= a1b1[i];
-        for (int i = 0; i < a2b2.size(); i++)
-            r[i] -= a2b2[i];
+        for (int i = 0; i < a1b1.size(); i++) r[i] -= a1b1[i];
+        for (int i = 0; i < a2b2.size(); i++) r[i] -= a2b2[i];
 
-        for (int i = 0; i < r.size(); i++)
-            res[i + k] += r[i];
-        for (int i = 0; i < a1b1.size(); i++)
-            res[i] += a1b1[i];
-        for (int i = 0; i < a2b2.size(); i++)
-            res[i + n] += a2b2[i];
+        for (int i = 0; i < r.size(); i++) res[i + k] += r[i];
+        for (int i = 0; i < a1b1.size(); i++) res[i] += a1b1[i];
+        for (int i = 0; i < a2b2.size(); i++) res[i + n] += a2b2[i];
         return res;
     }
 
@@ -370,17 +332,14 @@ struct bigint {
         vector<int> b6 = convert_base(v.z, base_digits, 6);
         vll a(a6.begin(), a6.end());
         vll b(b6.begin(), b6.end());
-        while (a.size() < b.size())
-            a.push_back(0);
-        while (b.size() < a.size())
-            b.push_back(0);
-        while (a.size() & (a.size() - 1))
-            a.push_back(0), b.push_back(0);
+        while (a.size() < b.size()) a.push_back(0);
+        while (b.size() < a.size()) b.push_back(0);
+        while (a.size() & (a.size() - 1)) a.push_back(0), b.push_back(0);
         vll c = karatsubaMultiply(a, b);
         bigint res;
         res.sign = sign * v.sign;
         for (int i = 0, carry = 0; i < c.size(); i++) {
-            long long cur = c[i] + carry;
+            ll cur = c[i] + carry;
             res.z.push_back((int) (cur % 1000000));
             carry = (int) (cur / 1000000);
         }

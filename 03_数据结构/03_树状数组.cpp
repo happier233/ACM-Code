@@ -1,16 +1,15 @@
-const int N = 50005;
-
+const int N = 1000005;
 struct BITree {
     int n;
-    ll c[N * 2];
+    ll c[N];
 
     void init(int n) {
-        memset(c, 0, sizeof(ll) * (n + 1));
+        memset(c, 0, sizeof(ll) * ++n);
         this->n = n;
     }
 
     int change(int pos, ll v) {
-        for (int i = pos; i <= n; i += i & (-i)) 
+        for (int i = pos; i < n; i += i & (-i))
             c[i] += v;
         return 0;
     }
