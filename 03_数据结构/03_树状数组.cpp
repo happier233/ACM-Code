@@ -3,9 +3,9 @@ struct BITree {
     int n;
     ll c[N];
 
-    void init(int n) {
+    void init(int _n) {
+        n = _n;
         memset(c, 0, sizeof(ll) * ++n);
-        this->n = n;
     }
 
     void change(int pos, ll v) {
@@ -18,5 +18,10 @@ struct BITree {
         for (int i = x; i > 0; i -= i & (-i))
             ans += c[i];
         return ans;
+    }
+
+    void update(int l, int r, ll v) {
+        change(l, v);
+        change(r + 1, -v);
     }
 };

@@ -7,17 +7,18 @@ void bfs(int s, int n) {
     memset(path, -1, sizeof(int) * n);
     dist[s] = 0;
     path[s] = s;
-    priority_queue<node> q;
-    q.push(node(s, dist[s]));
+	// 注意优先队列默认less运算，但选择最大的作为top，注意cmp！！！
+    priority_queue<Edge, vector<Edge>, greater<Edge>> q;
+    q.push(Edge(s, dist[s]));
     while (!q.empty()) {
-        node f = q.top();
+        Edge f = q.top();
         q.pop();
         for (int i = gh.head[f.e]; ~i; i = gh.eg[i].nxt) {
-            node &t = gh.eg[i];
+            Edge &t = gh.eg[i];
             if (dist[t.e] > f.v + t.v) {
                 dist[t.e] = f.v + t.v;
                 path[t.e] = f.e;
-                q.push(node(t.e, dist[t.e]));
+                q.push(Edge(t.e, dist[t.e]));
             }
         }
     }
@@ -25,7 +26,12 @@ void bfs(int s, int n) {
 
 #include <ext/pb_ds/priority_queue.hpp>
 #include <ext/pb_ds/assoc_container.hpp>
-typedef __gnu_pbds::priority_queue<node, greater<node>> heap;
+typedef __gnu_pbds::priority_queue<Edge, greater<Edge>> heap;
+// 使用该模板，需要注意因为使用了greater，所以需要重载大于运算
+// 默认pairing_heap_tag
+// push O(1), pop O(logn) modify O(logn) erase O(logn) join O(1)
+// 可选thin_heap_tag
+// push O(1), pop O(logn) modify O(1) erase O(logn) join O(n)
 
 heap::point_iterator its[N];
 int cnt[N];
@@ -37,20 +43,20 @@ void bfs(int s, int n) {
     dist[s] = 0;
     cnt[s] = 1;
     heap q;
-    its[s] = q.push(node(s, dist[s]));
+    its[s] = q.push(Edge(s, dist[s]));
     while (!q.empty()) {
-        node f = q.top();
+        Edge f = q.top();
         q.pop();
         for (int i = gh.head[f.e]; ~i; i = gh.eg[i].nxt) {
-            node &t = gh.eg[i];
+            Edge &t = gh.eg[i];
             its[t.e] = 0;
             int v = f.v + t.v;
             if (dist[t.e] > v) {
                 dist[t.e] = v;
                 if (its[t.e] != 0) {
-                    q.modify(its[t.e], node(t.e, dist[t.e]));
+                    q.modify(its[t.e], Edge(t.e, dist[t.e]));
                 } else {
-                    its[t.e] = q.push(node(t.e, dist[t.e]));
+                    its[t.e] = q.push(Edge(t.e, dist[t.e]));
                 }
                 cnt[t.e] = cnt[f.e];
             } else if (dist[t.e] == v) {

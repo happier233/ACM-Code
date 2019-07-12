@@ -542,9 +542,9 @@ struct BITree {
     int n;
     ll c[N];
 
-    void init(int n) {
+    void init(int _n) {
+        n = _n;
         memset(c, 0, sizeof(ll) * ++n);
-        this->n = n;
     }
 
     void change(int pos, ll v) {
@@ -557,6 +557,11 @@ struct BITree {
         for (int i = x; i > 0; i -= i & (-i))
             ans += c[i];
         return ans;
+    }
+
+    void update(int l, int r, ll v) {
+        change(l, v);
+        change(r + 1, -v);
     }
 };\end{lstlisting}
 \subsection{二维树状数组}
@@ -831,25 +836,60 @@ void solve() {
 }
 
 \end{lstlisting}
+\subsection{ST}
+\begin{lstlisting}
+struct ST {
+    int ck[N];
+    int rmq[N];
+    int dp[20][N];
+
+    void init(int n, int squ[]) {
+        ck[0] = -1;
+        for (int i = 1; i <= n; i++) {
+            ck[i] = ck[i - 1] + ((i & (i - 1)) == 0 ? 1 : 0);
+        }
+        memcpy(rmq, squ, sizeof(int) * n);
+        for (int i = 0; i < n; i++) {
+            dp[0][i] = i;
+        }
+        for (int k = 1; k <= ck[k]; k++) {
+            int dk = k - 1;
+            for (int i = 0; i < n; i++) {
+                int a = dp[dk][i];
+                int b = dp[dk][i + (1 << dk)];
+                dp[k][i] = rmq[a] < rmq[b] ? a : b;
+            }
+        }
+    }
+
+    int query(int l, int r) {
+        if (l > r) swap(l, r);
+        int k = ck[r - l + 1];
+        int a = dp[k][l];
+        int b = dp[k][r - (1 << k) + 1];
+        return rmq[a] < rmq[b] ? a : b;
+    }
+};\end{lstlisting}
 \clearpage\section{图论}
 \subsection{Graph}
 \begin{lstlisting}
-struct node {
-    int e, v, nxt;
-    node() = default;
-    node(int a, int b, int c = 0) : e(a), v(b), nxt(c) {}
-	
-    bool operator<(const node &a) const {
+struct Edge {
+    int e, nxt;
+    ll v;
+    Edge() = default;
+    Edge(int a, ll b, int c = 0) : e(a), v(b), nxt(c) {}
+
+    bool operator<(const Edge &a) const {
         return (a.v == v ? e < a.e : v < a.v);
     }
 };
 
-const ll INF = 10000000;
-const int N = 100000;
-const int M = 100000;
+const ll INF = ll(1e11);
+const int N = int(1e5 + 10);
+const int M = int(3e5 + 10);
 
 struct Graph {
-    node eg[M];
+    Edge eg[M];
     int head[N];
     int cnt;
 
@@ -857,9 +897,22 @@ struct Graph {
         memset(head, -1, sizeof(int) * ++n);
         cnt = 0;
     }
-    inline void addEdge(int x, int y, int v) {
-        eg[cnt] = node(y, v, head[x]);
+
+    inline void addEdge(int x, int y, ll v) {
+        eg[cnt] = Edge(y, v, head[x]);
         head[x] = cnt++;
+    }
+
+    inline int begin(int p) {
+        return head[p];
+    }
+
+    inline Edge &operator[](int i) {
+        return eg[i];
+    }
+
+    inline int next(int i) {
+        return eg[i].nxt;
     }
 } gh;\end{lstlisting}
 \subsection{Dijkstra}
@@ -873,17 +926,18 @@ void bfs(int s, int n) {
     memset(path, -1, sizeof(int) * n);
     dist[s] = 0;
     path[s] = s;
-    priority_queue<node> q;
-    q.push(node(s, dist[s]));
+	// 注意优先队列默认less运算，但选择最大的作为top，注意cmp！！！
+    priority_queue<Edge, vector<Edge>, greater<Edge>> q;
+    q.push(Edge(s, dist[s]));
     while (!q.empty()) {
-        node f = q.top();
+        Edge f = q.top();
         q.pop();
         for (int i = gh.head[f.e]; ~i; i = gh.eg[i].nxt) {
-            node &t = gh.eg[i];
+            Edge &t = gh.eg[i];
             if (dist[t.e] > f.v + t.v) {
                 dist[t.e] = f.v + t.v;
                 path[t.e] = f.e;
-                q.push(node(t.e, dist[t.e]));
+                q.push(Edge(t.e, dist[t.e]));
             }
         }
     }
@@ -891,7 +945,12 @@ void bfs(int s, int n) {
 
 #include <ext/pb_ds/priority_queue.hpp>
 #include <ext/pb_ds/assoc_container.hpp>
-typedef __gnu_pbds::priority_queue<node, greater<node>> heap;
+typedef __gnu_pbds::priority_queue<Edge, greater<Edge>> heap;
+// 使用该模板，需要注意因为使用了greater，所以需要重载大于运算
+// 默认pairing_heap_tag
+// push O(1), pop O(logn) modify O(logn) erase O(logn) join O(1)
+// 可选thin_heap_tag
+// push O(1), pop O(logn) modify O(1) erase O(logn) join O(n)
 
 heap::point_iterator its[N];
 int cnt[N];
@@ -903,20 +962,20 @@ void bfs(int s, int n) {
     dist[s] = 0;
     cnt[s] = 1;
     heap q;
-    its[s] = q.push(node(s, dist[s]));
+    its[s] = q.push(Edge(s, dist[s]));
     while (!q.empty()) {
-        node f = q.top();
+        Edge f = q.top();
         q.pop();
         for (int i = gh.head[f.e]; ~i; i = gh.eg[i].nxt) {
-            node &t = gh.eg[i];
+            Edge &t = gh.eg[i];
             its[t.e] = 0;
             int v = f.v + t.v;
             if (dist[t.e] > v) {
                 dist[t.e] = v;
                 if (its[t.e] != 0) {
-                    q.modify(its[t.e], node(t.e, dist[t.e]));
+                    q.modify(its[t.e], Edge(t.e, dist[t.e]));
                 } else {
-                    its[t.e] = q.push(node(t.e, dist[t.e]));
+                    its[t.e] = q.push(Edge(t.e, dist[t.e]));
                 }
                 cnt[t.e] = cnt[f.e];
             } else if (dist[t.e] == v) {
@@ -966,48 +1025,29 @@ bool spfa(int n, int start) {
 \end{lstlisting}
 \subsection{Dinic}
 \begin{lstlisting}
-#define N 2005
-#define INF 0x7fffffff
-
-struct dinic {
-
-    struct node {
-        int e;
-        ll f;
-
-        node() = default;
-
-        node(int a, ll b) : e(a), f(b) {}
-    };
-
+struct Dinic {
+    Graph gh;
     // 点的范围[0, n)
     int n;
-    vector<node> eg;
-    vector<int> head[N];
     // 弧优化
     int cur[N], dis[N];
 
-    dinic() = default;
+    Dinic(){};
 
     // 设置N
-    void setN(int n) {
-        this->n = n;
-    }
-
-    inline void addEdge(int x, int y, ll f) {
-        //printf("%d->%d: %lld\n", x, y, f);
-        head[x].push_back(static_cast<int &&>(eg.size()));
-        eg.push_back({y, f});
+    void init(int _n) {
+        n = _n;
+        gh.init(n);
     }
 
     // 加流量
     void addFlow(int x, int y, ll f) {
-        addEdge(x, y, f);
-        addEdge(y, x, 0);
+        gh.addEdge(x, y, f);
+        gh.addEdge(y, x, 0);
     }
 
     bool bfs(int s, int e) {
-        fill_n(dis, n, -1);
+        memset(dis, -1, sizeof(int) * n);
         int q[N];
         int l, r;
         l = r = 0;
@@ -1015,10 +1055,10 @@ struct dinic {
         q[r++] = s;
         while (l < r) {
             int f = q[l++];
-            for (const auto &i: head[f]) {
-                if (eg[i].f > 0 && dis[eg[i].e] == -1) {
-                    dis[eg[i].e] = dis[f] + 1;
-                    q[r++] = eg[i].e;
+            for (int i = gh.head[f]; ~i; i = gh.eg[i].nxt) {
+                if (gh.eg[i].v > 0 && dis[gh.eg[i].e] == -1) {
+                    dis[gh.eg[i].e] = dis[f] + 1;
+                    q[r++] = gh.eg[i].e;
                 }
             }
         }
@@ -1029,14 +1069,13 @@ struct dinic {
         if (s == e || mx == 0) {
             return mx;
         }
-        int flow = 0;
-        for (int &k = cur[s]; k < head[s].size(); k++) {
-            int &i = head[s][k];
-            auto &te = eg[i];
+        ll flow = 0;
+        for (int &k = cur[s]; ~k; k = gh.eg[k].nxt) {
+            auto &eg = gh.eg[k];
             ll a;
-            if (te.f > 0 && dis[te.e] == dis[s] + 1 && (a = dfs(te.e, e, min(te.f, mx)))) {
-                te.f -= a;
-                eg[i ^ 1].f += a;
+            if (eg.v > 0 && dis[eg.e] == dis[s] + 1 && (a = dfs(eg.e, e, min(eg.v, mx)))) {
+                eg.v -= a;
+                gh.eg[k ^ 1].v += a;
                 flow += a;
                 mx -= a;
                 if (mx <= 0) break;
@@ -1048,18 +1087,12 @@ struct dinic {
     ll max_flow(int s, int e) {
         ll ans = 0;
         while (bfs(s, e)) {
-            fill_n(cur, n, 0);
+            memcpy(cur, gh.head, sizeof(int) * n);
             ans += dfs(s, e, INF);
         }
         return ans;
     }
-
-    // 清空数据
-    void clear() {
-        rep(i, 0, n) head[i].clear();
-        eg.clear();
-    }
-};\end{lstlisting}
+} dinic;\end{lstlisting}
 \subsection{hungry}
 \begin{lstlisting}
 #define N 105
@@ -1148,6 +1181,210 @@ int prim(int cost[][N], int n) {
     }
     return ans;
 }\end{lstlisting}
+\subsection{MinCostMaxFlow}
+\begin{lstlisting}
+struct Edge {
+    int e, nxt;
+    ll flow, cost;
+
+    Edge() {};
+
+    Edge(int a, ll b, ll c, int d = 0) : e(a), flow(b), cost(c), nxt(d) {}
+};
+
+const ll INF = 1000000;
+const int N = int(1e5 + 10);
+const int M = int(1e5 + 10);
+
+struct Graph {
+    Edge eg[M];
+    int head[N];
+    int cnt;
+
+    void init(int n) {
+        memset(head, -1, sizeof(int) * ++n);
+        cnt = 0;
+    }
+
+    inline void addEdge(int x, int y, ll v, ll c) {
+        eg[cnt] = Edge(y, v, c, head[x]);
+        head[x] = cnt++;
+    }
+};
+
+struct MinCostMaxFlow {
+    Graph gh;
+    // 点的范围[0, n)
+    int n;
+
+    // 设置N
+    void init(int _n) {
+        n = _n;
+        gh.init(n);
+    }
+
+    // 加流量，反向是负的花费
+    void addFlow(int x, int y, ll f, ll c) {
+        // printf("%d->%d: %lld\t%lld\n", x, y, f, c); fflush(stdout);
+        gh.addEdge(x, y, f, c);
+        gh.addEdge(y, x, 0, -c);
+    }
+
+    // 该pre存的是边
+    int pre[N];
+    int dis[N];
+    bool vis[N];
+
+    bool spfa(int s, int e) {
+        queue<int> q;
+        for (int i = 0; i < n; i++) {
+            dis[i] = INF;
+            vis[i] = false;
+            pre[i] = -1;
+        }
+        dis[s] = 0;
+        vis[s] = true;
+        q.push(s);
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            vis[u] = false;
+            for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
+                Edge &eg = gh.eg[i];
+                if (eg.flow > 0 && dis[eg.e] > dis[u] + eg.cost) {
+                    dis[eg.e] = dis[u] + eg.cost;
+                    pre[eg.e] = i;
+                    if (!vis[eg.e]) {
+                        vis[eg.e] = true;
+                        q.push(eg.e);
+                    }
+                }
+            }
+        }
+        return pre[e] != -1;
+    }
+
+    pll cal(int s, int e) {
+        ll flow = 0, cost = 0;
+        while (spfa(s, e)) {
+            ll f = INF;
+            for (int i = pre[e]; ~i; i = pre[gh.eg[i ^ 1].e]) {
+                f = min(f, gh.eg[i].flow);
+            }
+            for (int i = pre[e]; ~i; i = pre[gh.eg[i ^ 1].e]) {
+                gh.eg[i].flow -= f;
+                gh.eg[i ^ 1].flow += f;
+                cost += gh.eg[i].cost;
+            }
+            flow += f;
+        }
+        return make_pair(flow, cost);
+    }
+
+} network;\end{lstlisting}
+\subsection{ISAP}
+\begin{lstlisting}
+struct ISAP {
+    Graph gh;
+    // 点的范围[0, n)
+    int n;
+    // 弧优化
+    int cur[N], dis[N];
+    ISAP() {};
+    // 设置N
+    void init(int _n) {
+        n = _n;
+        gh.init(n);
+    }
+
+    // 加流量
+    inline void addFlow(int x, int y, ll f) {
+        gh.addEdge(x, y, f);
+        gh.addEdge(y, x, 0);
+    }
+
+    int dep[N]; // 记录距离标号
+    int gap[N]; // gap常数优化
+    int q[N]; // 数组模拟队列
+
+    void bfs(int s, int e) {
+        memset(dep, -1, sizeof(int) * n);
+        memset(gap, 0, sizeof(int) * n);
+        gap[0] = 1;
+        dep[e] = 0;
+        int l = 0, r = 0;
+        q[r++] = e;
+        while (l < r) {
+            int u = q[l++];
+            for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
+                int v = gh.eg[i].e;
+                if (~dep[v]) continue;
+                q[r++] = v;
+                dep[v] = dep[u] + 1;
+                gap[dep[v]]++;
+            }
+        }
+    }
+
+    ll st[N]; // 栈优化
+
+    ll max_flow(int s, int e) {
+        bfs(s, e);
+        memcpy(cur, gh.head, sizeof(int) * n);
+        int top = 0;
+        int u = s;
+        ll ans = 0;
+        while (dep[s] < N) {
+            if (u == e) {
+                ll mf = INF;
+                int sel = 0;
+                for (int i = 0; i < top; i++) {
+                    if (mf > gh.eg[st[i]].v) {
+                        mf = gh.eg[st[i]].v;
+                        sel = i;
+                    }
+                }
+
+                for (int i = 0; i < top; i++) {
+                    gh.eg[st[i]].v -= mf;
+                    gh.eg[st[i] ^ 1].v += mf;
+                }
+                ans += mf;
+                top = sel;
+                u = gh.eg[st[top] ^ 1].e;
+                continue;
+            }
+            bool flag = false;
+            int v = 0;
+            for (int i = cur[u]; ~i; i = gh.eg[i].nxt) {
+                v = gh.eg[i].e;
+                if (gh.eg[i].v > 0 && dep[v] + 1 == dep[u]) {
+                    flag = true;
+                    cur[u] = i;
+                    break;
+                }
+            }
+            if (flag) {
+                st[top++] = cur[u];
+                u = v;
+                continue;
+            }
+            int mind = N;
+            for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
+                if (gh.eg[i].v > 0 && dep[gh.eg[i].e] < mind) {
+                    mind = dep[gh.eg[i].e];
+                    cur[u] = i;
+                }
+            }
+            gap[dep[u]]--; // 当前层无法连通，降层
+            if (!gap[dep[u]]) return ans; // 断层结束运算
+            dep[u] = mind + 1; // 进入更高层
+            gap[dep[u]]++;
+            if (u != s)  u = gh.eg[st[--top] ^ 1].e;
+        }
+        return ans;
+    }
+} isap;\end{lstlisting}
 \clearpage\section{博弈}
 \subsection{GameProblem}
 \begin{lstlisting}

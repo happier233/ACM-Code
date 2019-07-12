@@ -1,45 +1,26 @@
-#define N 2005
-#define INF 0x7fffffff
-
-struct dinic {
-
-    struct node {
-        int e;
-        ll f;
-
-        node() = default;
-
-        node(int a, ll b) : e(a), f(b) {}
-    };
-
+struct Dinic {
+    Graph gh;
     // 点的范围[0, n)
     int n;
-    vector<node> eg;
-    vector<int> head[N];
     // 弧优化
     int cur[N], dis[N];
 
-    dinic() = default;
+    Dinic(){};
 
     // 设置N
-    void setN(int n) {
-        this->n = n;
-    }
-
-    inline void addEdge(int x, int y, ll f) {
-        //printf("%d->%d: %lld\n", x, y, f);
-        head[x].push_back(static_cast<int &&>(eg.size()));
-        eg.push_back({y, f});
+    void init(int _n) {
+        n = _n;
+        gh.init(n);
     }
 
     // 加流量
     void addFlow(int x, int y, ll f) {
-        addEdge(x, y, f);
-        addEdge(y, x, 0);
+        gh.addEdge(x, y, f);
+        gh.addEdge(y, x, 0);
     }
 
     bool bfs(int s, int e) {
-        fill_n(dis, n, -1);
+        memset(dis, -1, sizeof(int) * n);
         int q[N];
         int l, r;
         l = r = 0;
@@ -47,10 +28,10 @@ struct dinic {
         q[r++] = s;
         while (l < r) {
             int f = q[l++];
-            for (const auto &i: head[f]) {
-                if (eg[i].f > 0 && dis[eg[i].e] == -1) {
-                    dis[eg[i].e] = dis[f] + 1;
-                    q[r++] = eg[i].e;
+            for (int i = gh.head[f]; ~i; i = gh.eg[i].nxt) {
+                if (gh.eg[i].v > 0 && dis[gh.eg[i].e] == -1) {
+                    dis[gh.eg[i].e] = dis[f] + 1;
+                    q[r++] = gh.eg[i].e;
                 }
             }
         }
@@ -61,14 +42,13 @@ struct dinic {
         if (s == e || mx == 0) {
             return mx;
         }
-        int flow = 0;
-        for (int &k = cur[s]; k < head[s].size(); k++) {
-            int &i = head[s][k];
-            auto &te = eg[i];
+        ll flow = 0;
+        for (int &k = cur[s]; ~k; k = gh.eg[k].nxt) {
+            auto &eg = gh.eg[k];
             ll a;
-            if (te.f > 0 && dis[te.e] == dis[s] + 1 && (a = dfs(te.e, e, min(te.f, mx)))) {
-                te.f -= a;
-                eg[i ^ 1].f += a;
+            if (eg.v > 0 && dis[eg.e] == dis[s] + 1 && (a = dfs(eg.e, e, min(eg.v, mx)))) {
+                eg.v -= a;
+                gh.eg[k ^ 1].v += a;
                 flow += a;
                 mx -= a;
                 if (mx <= 0) break;
@@ -80,15 +60,9 @@ struct dinic {
     ll max_flow(int s, int e) {
         ll ans = 0;
         while (bfs(s, e)) {
-            fill_n(cur, n, 0);
+            memcpy(cur, gh.head, sizeof(int) * n);
             ans += dfs(s, e, INF);
         }
         return ans;
     }
-
-    // 清空数据
-    void clear() {
-        rep(i, 0, n) head[i].clear();
-        eg.clear();
-    }
-};
+} dinic;
