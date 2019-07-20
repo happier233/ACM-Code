@@ -1,19 +1,25 @@
-//适用于正负整数
+
+
 template <class T>
-inline bool scan_d (T &ret) {
-    char c; int sgn;
-    if( c = getchar(), c == EOF)    return 0; //EOF
-    while (c != '-' && (c < '0' || c > '9')) c = getchar();
-    sgn = (c == '-') ? -1 : 1;
-    ret = (c == '-') ? 0 : (c - '0');
-    while (c = getchar(), c >= '0' && c <= '9') ret = ret * 10 + (c - '0');
-    ret *= sgn;
-    return 1;
+inline bool read(T &x) {
+    x = 0;
+    char c = getchar();
+	if(c == EOF) return false;
+    bool f = false;
+    for (; !isdigit(c); c = getchar()) f ^= (c == '-');
+    for (; isdigit(c); c = getchar()) x = x * 10 + (c - '0');
+    x = f ? -x : x;
+	return true;
 }
-//适用于正负整数
+ 
 template <class T>
-inline void outU (T x) {
-	if (x < 0)  putchar('-'), x = -x;
-    if (x > 9) out (x / 10);
-    putchar (x % 10 + '0');
+inline void write(T x) {
+    if (x < 0) {
+        putchar('-');
+        x = -x;
+    }
+    T y = 1;
+    int len = 1;
+    for (; y <= x / 10; y *= 10) ++len;
+    for (; len; --len, x %= y, y /= 10) putchar(x / y + '0');
 }

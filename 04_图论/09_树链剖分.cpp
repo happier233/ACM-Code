@@ -46,11 +46,11 @@ struct TreeChain {
     }
 } treec;
 
-// 树状数组
+// 树状数组，如果无需在线查询可以使用差分树
 BITree tree;
 
-// 配套树状数组
-void change(int u, int v, ll val) {
+// 点权修改
+void change1(int u, int v, ll val) {
     int f1 = treec.top[u];
     int f2 = treec.top[v];
     while (f1 != f2) {
@@ -58,12 +58,31 @@ void change(int u, int v, ll val) {
             swap(f1, f2);
             swap(u, v);
         }
-        tree.update(treec.p[f1], treec.p[u], val);
+        tree1.update(treec.p[f1], treec.p[u], val);
         u = treec.fa[f1];
         f1 = treec.top[u];
     }
     if (treec.deep[u] > treec.deep[v]) {
         swap(u, v);
     }
-    tree.update(treec.p[u], treec.p[v], val);
+    tree1.update(treec.p[u], treec.p[v], val);
+}
+
+// 边权修改
+void change2(int u, int v, ll val) {
+    int f1 = treec.top[u];
+    int f2 = treec.top[v];
+    while (f1 != f2) {
+        if (treec.deep[f1] < treec.deep[f2]) {
+            swap(f1, f2);
+            swap(u, v);
+        }
+        tree2.update(treec.p[f1], treec.p[u], val);
+        u = treec.fa[f1];
+        f1 = treec.top[u];
+    }
+    if (treec.deep[u] > treec.deep[v]) {
+        swap(u, v);
+    }
+    tree2.update(treec.p[treec.son[u]], treec.p[v], val);
 }
