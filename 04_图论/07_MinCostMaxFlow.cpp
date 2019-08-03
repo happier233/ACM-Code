@@ -34,7 +34,7 @@ struct MinCostMaxFlow {
 
     // 设置N
     void init(int _n) {
-        n = _n;
+        n = _n + 1;
         gh.init(n);
     }
 

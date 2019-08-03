@@ -1,3 +1,5 @@
+#define forg(i, h, eg) for(int i = (h); ~i; i = (eg[i]).nxt)
+
 struct Edge {
     int e, nxt;
     ll v;
@@ -23,20 +25,8 @@ struct Graph {
         cnt = 0;
     }
 
-    inline void addEdge(int x, int y, ll v) {
+    inline void addEdge(int x, int y, ll v = 0) {
         eg[cnt] = Edge(y, v, head[x]);
         head[x] = cnt++;
-    }
-
-    inline int begin(int p) {
-        return head[p];
-    }
-
-    inline Edge &operator[](int i) {
-        return eg[i];
-    }
-
-    inline int next(int i) {
-        return eg[i].nxt;
     }
 } gh;
