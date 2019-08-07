@@ -59,6 +59,16 @@ struct LB {
         }
         return 0;
     }
+	
+	bool test(ll x) const {
+        per(i, 0, LN) {
+            if (bt(x, i)) {
+                if (!d[i]) return false;
+                x ^= d[i];
+            }
+        }
+        return true;
+    }
 
     void rebuild() {
         per(i, 0, LN) {

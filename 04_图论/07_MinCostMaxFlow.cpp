@@ -11,6 +11,7 @@ const ll INF = 1000000;
 const int N = int(1e5 + 10);
 const int M = int(1e5 + 10);
 
+//前向星
 struct Graph {
     Edge eg[M];
     int head[N];
@@ -97,3 +98,87 @@ struct MinCostMaxFlow {
     }
 
 } network;
+
+// vector图存
+struct MinCostMaxFlow {
+    vector<Edge> g[N];
+    // 点的范围[0, n)
+    int n = 0;
+
+    // 设置N
+    void init(int _n) {
+        rep(i, 0, n) {
+            g[i].clear();
+        }
+        n = _n + 1;
+    }
+
+    // 加流量，反向是负的花费
+    void addFlow(int x, int y, int f, int c) {
+        g[x].push_back(Edge(y, f, c, g[y].size()));
+        g[y].push_back(Edge(x, 0, -c, g[x].size() - 1));
+    }
+
+    // 该pre存的是(点,边)
+    pii pre[N];
+    int dis[N];
+    bool vis[N];
+    int h[N];
+
+    int cnt = 0;
+
+    bool bfs(int s, int e) {
+        priority_queue<pii, vector<pii>, greater<pii>> q;
+        for (int i = 0; i < n; i++) {
+            dis[i] = INF;
+            vis[i] = false;
+            pre[i] = pii(-1, -1);
+        }
+        dis[s] = 0;
+        q.push(pii(0, s));
+        while (!q.empty()) {
+            pii f = q.top();
+            int u = f.second;
+            q.pop();
+            if (f.first != dis[u]) continue;
+            for (int i = 0; i < sz(g[u]); i++) {
+                auto &eg = g[u][i];
+                if (eg.flow == 0) continue;
+                int v = eg.e;
+                int cost = eg.cost + dis[u] + h[u] - h[v];
+                if (dis[v] > cost) {
+                    cnt++;
+                    dis[v] = cost;
+                    pre[v] = pii(u, i);
+                    q.push(pii(dis[v], v));
+                }
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            h[i] += dis[i];
+        }
+        return pre[e].second != -1;
+    }
+
+    pii cal(int s, int e, int limit) {
+        int flow = 0, cost = 0;
+        memset(h, 0, sizeof(int) * n);
+        cnt = 0;
+        while (limit) {
+            if (!bfs(s, e)) break;
+            int f = INF;
+            for (int i = e; ~pre[i].second; i = pre[i].first) {
+                f = min(f, g[pre[i].first][pre[i].second].flow);
+            }
+            for (int i = e; ~pre[i].second; i = pre[i].first) {
+                g[pre[i].first][pre[i].second].flow -= f;
+                g[i][g[pre[i].first][pre[i].second].nxt].flow += f;
+            }
+            cost += f * h[e];
+            flow += f;
+            limit -= f;
+        }
+        return make_pair(flow, cost);
+    }
+
+} network;  
