@@ -1,4 +1,5 @@
 int dis;
+// linkx: x链接的y，linky: y链接的x
 int linkx[N], linky[N];
 int dx[N], dy[N];
 bool vis[N];
@@ -49,7 +50,6 @@ bool dfs(int u) {
     }
     return false;
 }
-
 
 int MaxMatch(int n) {
     int rst = 0;
