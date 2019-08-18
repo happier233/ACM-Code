@@ -2,6 +2,7 @@ const int MAX_DEP = 20;
 
 // 倍增2^k的父亲
 int fa[N][MAX_DEP];
+int dep[N];
 
 // 倍增LCA
 int lca(int u, int v) {
