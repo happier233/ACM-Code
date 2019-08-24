@@ -13,7 +13,9 @@ typedef pair<int, int> pii;
 #define all(x) (x).begin(),(x).end()
 #define rep(i, l, r) for(int i=(l);i<(r);++i)
 #define per(i, l, r) for(int i=(r)-1;i>=(l);--i)
+#define mst(t, v, n) memset(t, v, sizeof(decltype(*(t))) * (n))
 #define sf(x) scanf("%d", &(x))
+//---debug array *(ll(*)[10])ptr
 
 using namespace std;
 
