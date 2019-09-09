@@ -6,12 +6,15 @@ import json
 TexHead = r"""
 \documentclass[twoside]{article}
 \usepackage[colorlinks,linkcolor=black]{hyperref}
-\usepackage{xeCJK}
+\usepackage{xeCJK,xunicode}
 \usepackage{fancyhdr}
-\usepackage{amsmath, amsthm}
+\usepackage{amsmath,amsthm}
 \usepackage{listings,xcolor}
 \usepackage{geometry}
 \usepackage{fontspec}
+\setCJKmainfont[BoldFont=STYuanti-SC-Regular,ItalicFont=STYuanti-SC-Regular]{STYuanti-SC-Regular} 
+\setCJKmonofont[BoldFont=STYuanti-SC-Regular]{STYuanti-SC-Regular} 
+\setCJKsansfont{STYuanti-SC-Regular}
 \setsansfont{Monaco}
 \setmonofont[Mapping={}]{Monaco}
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}

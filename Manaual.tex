@@ -1,12 +1,15 @@
 
 \documentclass[twoside]{article}
 \usepackage[colorlinks,linkcolor=black]{hyperref}
-\usepackage{xeCJK}
+\usepackage{xeCJK,xunicode}
 \usepackage{fancyhdr}
-\usepackage{amsmath, amsthm}
+\usepackage{amsmath,amsthm}
 \usepackage{listings,xcolor}
 \usepackage{geometry}
 \usepackage{fontspec}
+\setCJKmainfont[BoldFont=STYuanti-SC-Regular,ItalicFont=STYuanti-SC-Regular]{STYuanti-SC-Regular} 
+\setCJKmonofont[BoldFont=STYuanti-SC-Regular]{STYuanti-SC-Regular} 
+\setCJKsansfont{STYuanti-SC-Regular}
 \setsansfont{Monaco}
 \setmonofont[Mapping={}]{Monaco}
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
@@ -164,9 +167,6 @@ const double pi = acos(-1);\end{lstlisting}
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
-#endif
-#if __cplusplus >= 201402L
-#include <shared_mutex>
 #endif\end{lstlisting}
 \clearpage\section{字串符}
 \subsection{KMP}
@@ -2369,6 +2369,76 @@ LB operator^(const LB &n1, const LB &n2) {
     }
     return ans;
 }\end{lstlisting}
+\subsection{FWT}
+\begin{lstlisting}
+void FWT(int p[], int n) { // 如果要取模运算记得-x+MOD,*inv
+    for (int i = 1; i < n; i <<= 1) {
+        for (int j = 0; j < n; j += (i << 1)) {
+            for (int k = 0; k < i; k++) {
+                // or{
+                p[i + j + k] += +p[j + k];
+                // and
+                p[j + k] += p[i + j + k];
+                // xor
+                tie(p[j + k], p[i + j + k]) = make_pair(p[j + k] + p[i + j + k], p[j + k] - p[i + j + k]);
+            }
+        }
+    }
+}
+
+void IFWT(int p[], int n) { // 如果要取模运算记得-x+MOD,*inv
+    for (int i = 1; i < n; i <<= 1) {
+        for (int j = 0; j < n; j += (i << 1)) {
+            for (int k = 0; k < i; k++) {
+                // or
+                p[i + j + k] -= p[j + k];
+                // and
+                p[j + k] -= p[i + j + k];
+                // xor
+                tie(p[j + k], p[i + j + k]) = make_pair(p[j + k] + p[i + j + k], p[j + k] - p[i + j + k]);
+                p[j + k] = p[j + k] / 2, p[i + j + k] = p[i + j + k] / 2;
+            }
+        }
+    }
+}\end{lstlisting}
+\subsection{FFT}
+\begin{lstlisting}
+inline int lowbit(int x) { return x & -x; }
+
+int calc(int n) {
+    int k = 0;
+    while ((1 << k) < n) k++;
+    return k;
+}
+
+// FFT
+const double pi = acos(-1.0);
+
+const int N = (1 << 20);
+using Complex = complex<double>;
+
+void change(Complex p[], int n) {
+    int k = calc(n);
+    n = 1 << k;
+    vector<int> r(n, 0);
+    for (int i = 0; i < n; i++) r[i] = (r[i >> 1] >> 1) | ((i & 1) << (k - 1));
+    for (int i = 0; i < n; i++) if (i < r[i]) swap(p[i], p[r[i]]);
+}
+
+void FFT(Complex p[], int n, int type) {
+    change(p, n);
+    for (int mid = 1; mid < n; mid <<= 1) { //待合并区间的长度的一半
+        Complex wn(cos(pi / mid), type * sin(pi / mid)); //单位根
+        for (int R = mid << 1, j = 0; j < n; j += R) { //R是区间的长度，j表示前已经到哪个位置了
+            Complex w(1, 0); //幂
+            for (int k = 0; k < mid; k++, w = w * wn) { //枚举左半部分
+                Complex x = p[j + k], y = w * p[j + mid + k]; //蝴蝶效应
+                p[j + k] = x + y;
+                p[j + mid + k] = x - y;
+            }
+        }
+    }
+}\end{lstlisting}
 \clearpage\section{其他}
 \subsection{BigInteger}
 \begin{lstlisting}
@@ -3006,7 +3076,7 @@ void initPrime() {
         if (!prime_list[i])
             prime_table[prime_count++] = i;
         for (int j = 0, e = PMAX / i;
-             j < prime_count && prime_table[j] <= e; j++) {
+             j < prime_count && prime_table[j] < e; j++) {
             prime_list[i * prime_table[j]] = true;
             if (i % prime_table[j] == 0) break;
         }
@@ -3026,7 +3096,7 @@ void initPrime() {
         if (!prime_list[i])
             prime_list[i] = prime_table[prime_count++] = i;
         for (int j = 0, e = PMAX / i, now; 
-        	j < prime_count && (now = prime_table[j]) <= e; j++) {
+        	j < prime_count && (now = prime_table[j]) < e; j++) {
             prime_list[i * now] = now;
             if (i % now == 0) break;
         }

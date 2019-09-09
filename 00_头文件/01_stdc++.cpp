@@ -87,6 +87,3 @@
 #include <unordered_map>
 #include <unordered_set>
 #endif
-#if __cplusplus >= 201402L
-#include <shared_mutex>
-#endif
