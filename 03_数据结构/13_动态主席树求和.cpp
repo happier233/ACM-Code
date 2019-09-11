@@ -1,6 +1,7 @@
 const int N = int(2e5 + 10);
 // m: update count,MAXN>=m*log(n)^2
 const int MAXN = int(4e7 + 10);
+const int LN = 40;
 
 struct PSegTree {
     const int *a;
@@ -35,41 +36,55 @@ struct PSegTree {
         return rt;
     }
 
-    // build static tree
-    inline void change(int id, int p, int v) {
-        if (v == 0) t[id] = t[id - 1];
-        else t[id] = update(t[id - 1], p, v);
-    }
-
-    // update data
-    int update(int rt, int p, int v) {
-        int k = ++tot, rst = k;
+    // update the root in k
+    void update(int k[], int rt[], int cnt, int p, int v) {
+        // calc
+        for (int i = 0; i < cnt; i++)
+            c[k[i]] = c[rt[i]] + v;
         int l, r;
         tie(l, r) = ran;
-        // calc
-        c[k] = c[rt] + v;
         while (l < r) {
             int mid = (l + r) >> 1;
             // 下面的逗号表达式顺序不能换
             if (p <= mid) {
                 // go left
-                rson[k] = rson[rt], rt = lson[rt], k = lson[k] = ++tot;
+                for (int i = 0; i < cnt; i++) {
+                    rson[k[i]] = rson[rt[i]], rt[i] = lson[rt[i]], k[i] = lson[k[i]] = ++tot;
+                }
                 r = mid;
             } else {
                 // go right
-                lson[k] = lson[rt], rt = rson[rt], k = rson[k] = ++tot;
+                for (int i = 0; i < cnt; i++) {
+                    lson[k[i]] = lson[rt[i]], rt[i] = rson[rt[i]], k[i] = rson[k[i]] = ++tot;
+                }
                 l = mid + 1;
             }
             // calc
-            c[k] = c[rt] + v;
+            for (int i = 0; i < cnt; i++)
+                c[k[i]] = c[rt[i]] + v;
         }
-        return rst;
     }
 
-    inline void add(int id, int p, int v) {
-        // BITree with PSegTree
-        for (int i = id; i <= n; i += (i & -i))
-            s[i] = update(s[i], p, v);
+    // build static tree
+    inline void change(int pos, int p, int v) {
+        if (v == 0) t[pos] = t[pos - 1];
+        else { // use int as the int[]
+            int rt = t[pos - 1];
+            int k = t[pos] = ++tot;
+            update(&k, &rt, 1, p, v);
+        }
+    }
+
+    int use1[LN], use2[LN];
+
+    inline void add(int pos, int p, int v) {
+        // memory reuse
+        int *k = use1, *rt = use2;
+        int cnt = 0;
+        for (int i = pos; i <= n; i += (i & -i), cnt++) {
+            rt[cnt] = s[i], s[i] = k[cnt] = ++tot;
+        }
+        update(k, rt, cnt, p, v);
     }
 
     // calc lson value in use
@@ -87,8 +102,6 @@ struct PSegTree {
             ans += c[use[i]];
         return ans;
     }
-
-    int use1[N], use2[N];
 
     // ans=p1-p2
     int query(int p1, int p2, int k) {
