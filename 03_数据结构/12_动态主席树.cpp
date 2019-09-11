@@ -1,6 +1,6 @@
 // m: update count,MAXN>=m*log(n)^2
-const int N = int(6e4 + 10);
-const int MAXN = N * 40;
+const int N = int(2e5 + 10);
+const int MAXN = int(4e7 + 10);
 
 struct PSegTree {
     const int *a;
@@ -16,7 +16,6 @@ struct PSegTree {
         int k = ++tot;
         c[k] = 0;
         if (l == r) {
-            lson[k] = rson[k] = 0;
             return k;
         }
         int mid = (l + r) >> 1;
@@ -25,6 +24,7 @@ struct PSegTree {
         return k;
     }
 
+    // SegTree Range and n points, num can be nullptr
     int init(int l, int r, int _n, const int num[]) {
         tot = 0;
         a = num;
@@ -36,8 +36,9 @@ struct PSegTree {
     }
 
     // build static tree
-    void change(int id, int p, int v) {
-        t[id] = update(t[id - 1], p, v);
+    inline void change(int id, int p, int v) {
+        if (v == 0) t[id] = t[id - 1];
+        else t[id] = update(t[id - 1], p, v);
     }
 
     // update data
@@ -65,23 +66,64 @@ struct PSegTree {
         return rst;
     }
 
-    void add(int id, int p, int v) {
+    inline void add(int id, int p, int v) {
         // BITree with PSegTree
         for (int i = id; i <= n; i += (i & -i))
             s[i] = update(s[i], p, v);
     }
 
     // calc lson value in use
-    int sum(int use[], int cnt) {
+    inline int sum(int use[], int cnt) {
         int ans = 0;
         for (int i = 0; i < cnt; i++)
             ans += c[lson[use[i]]];
         return ans;
     }
 
+    // calc value in use
+    inline int calc(int use[], int cnt) {
+        int ans = 0;
+        for (int i = 0; i < cnt; i++)
+            ans += c[use[i]];
+        return ans;
+    }
+
     int use1[N], use2[N];
 
-    int query(int p1, int p2, int k) {
+    // ans=p1-p2
+    int sum(int p1, int p2, int k) {
+        int r1 = t[p1], r2 = t[p2];
+        int cnt1 = 0, cnt2 = 0;
+        // calc root in need
+        for (int i = p1; i; i -= (i & -i)) use1[cnt1++] = s[i];
+        for (int i = p2; i; i -= (i & -i)) use2[cnt2++] = s[i];
+        int l, r;
+        tie(l, r) = ran;
+        int ans = 0;
+        while (l < r) {
+            int mid = (l + r) >> 1;
+            int cnt = c[lson[r1]] - c[lson[r2]] + sum(use1, cnt1) - sum(use2, cnt2);
+            if (k <= mid) {
+                // go left
+                r1 = lson[r1], r2 = lson[r2];
+                for (int i = 0; i < cnt1; i++) use1[i] = lson[use1[i]];
+                for (int i = 0; i < cnt2; i++) use2[i] = lson[use2[i]];
+                r = mid;
+            } else {
+                // go right
+                ans += cnt;
+                r1 = rson[r1], r2 = rson[r2];
+                for (int i = 0; i < cnt1; i++) use1[i] = rson[use1[i]];
+                for (int i = 0; i < cnt2; i++) use2[i] = rson[use2[i]];
+                l = mid + 1;
+            }
+        }
+        int cnt = c[r1] - c[r2] + calc(use1, cnt1) - calc(use2, cnt2);
+        ans += cnt;
+        return ans;
+    }
+	
+	int query(int p1, int p2, int k) {
         int r1 = t[p1], r2 = t[--p2];
         int cnt1 = 0, cnt2 = 0;
         // calc root in need
