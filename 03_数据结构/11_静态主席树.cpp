@@ -1,6 +1,6 @@
 // m=update count,MAXN>=m*log(n)
-const int N = 200005;
-const int MAXN = N * 40;
+const int N = int(2e5 + 10);
+const int MAXN = int(1e7 + 10);
 
 struct PSegTree {
     const int *a;
@@ -69,5 +69,26 @@ struct PSegTree {
             }
         }
         return l;
+    }
+	
+	// r1=right_root,r2=left_root, sum of num<=k
+    int sum(int r1, int r2, int k) {
+        int l, r;
+        tie(l, r) = ran;
+        int ans = 0;
+        while (l < r) {
+            int mid = (l + r) >> 1;
+            int cnt = c[lson[r1]] - c[lson[r2]];
+            if (k <= mid) {
+                r1 = lson[r1], r2 = lson[r2];
+                r = mid;
+            } else {
+                ans += cnt;
+                r1 = rson[r1], r2 = rson[r2];
+                l = mid + 1;
+            }
+        }
+        ans += c[r1] - c[r2];
+        return ans;
     }
 } tree;

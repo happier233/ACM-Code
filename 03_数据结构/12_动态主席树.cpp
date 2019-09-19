@@ -1,5 +1,5 @@
-const int N = int(2e5 + 10);
 // m: update count,MAXN>=m*log(n)^2
+const int N = int(2e5 + 10);
 const int MAXN = int(4e7 + 10);
 const int LN = 40;
 
@@ -10,7 +10,7 @@ struct PSegTree {
     int c[MAXN];
     int tot = 0;
     int lson[MAXN], rson[MAXN];
-    // t: static root,s: dynamic root
+    // t: static root, s: dynamic root
     int t[N], s[N];
 
     int build(int l, int r) {
@@ -67,8 +67,11 @@ struct PSegTree {
 
     // build static tree
     inline void change(int pos, int p, int v) {
-        if (v == 0) t[pos] = t[pos - 1];
-        else { // use int as the int[]
+        if (v == 0) { // no change
+            t[pos] = t[pos - 1];
+        } else {
+            // use int as the int[]
+            // must use variable because I use the pointer
             int rt = t[pos - 1];
             int k = t[pos] = ++tot;
             update(&k, &rt, 1, p, v);
@@ -77,6 +80,7 @@ struct PSegTree {
 
     int use1[LN], use2[LN];
 
+    // edit dynamic tree
     inline void add(int pos, int p, int v) {
         // memory reuse
         int *k = use1, *rt = use2;
@@ -104,7 +108,7 @@ struct PSegTree {
     }
 
     // ans=p1-p2
-    int query(int p1, int p2, int k) {
+    int querySum(int p1, int p2, int k) {
         int r1 = t[p1], r2 = t[p2];
         int cnt1 = 0, cnt2 = 0;
         // calc root in need
@@ -134,5 +138,35 @@ struct PSegTree {
         int cnt = c[r1] - c[r2] + calc(use1, cnt1) - calc(use2, cnt2);
         ans += cnt;
         return ans;
+    }
+
+    // query k
+    int query(int p1, int p2, int k) {
+        int r1 = t[p1], r2 = t[p2];
+        int cnt1 = 0, cnt2 = 0;
+        // calc root in need
+        for (int i = p1; i; i -= (i & -i)) use1[cnt1++] = s[i];
+        for (int i = p2; i; i -= (i & -i)) use2[cnt2++] = s[i];
+        int l, r;
+        tie(l, r) = ran;
+        while (l < r) {
+            int mid = (l + r) >> 1;
+            int cnt = c[lson[r1]] - c[lson[r2]] + sum(use1, cnt1) - sum(use2, cnt2);
+            if (cnt >= k) {
+                // go left
+                r1 = lson[r1], r2 = lson[r2];
+                for (int i = 0; i < cnt1; i++) use1[i] = lson[use1[i]];
+                for (int i = 0; i < cnt2; i++) use2[i] = lson[use2[i]];
+                r = mid;
+            } else {
+                // go right
+                k -= cnt;
+                r1 = rson[r1], r2 = rson[r2];
+                for (int i = 0; i < cnt1; i++) use1[i] = rson[use1[i]];
+                for (int i = 0; i < cnt2; i++) use2[i] = rson[use2[i]];
+                l = mid + 1;
+            }
+        }
+        return l;
     }
 } tree;
