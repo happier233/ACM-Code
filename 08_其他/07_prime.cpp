@@ -9,8 +9,8 @@ void initPrime() {
     for (int i = 2; i < PMAX; i++) {
         if (!prime_list[i])
             prime_table[prime_count++] = i;
-        for (int j = 0, e = PMAX / i;
-             j < prime_count && prime_table[j] < e; j++) {
+        for (int j = 0, e = (PMAX - 1) / i;
+             j < prime_count && prime_table[j] <= e; j++) {
             prime_list[i * prime_table[j]] = true;
             if (i % prime_table[j] == 0) break;
         }
@@ -29,8 +29,8 @@ void initPrime() {
     for (int i = 2; i < PMAX; i++) {
         if (!prime_list[i])
             prime_list[i] = prime_table[prime_count++] = i;
-        for (int j = 0, e = PMAX / i, now; 
-        	j < prime_count && (now = prime_table[j]) < e; j++) {
+        for (int j = 0, e = (PMAX - 1) / i;
+             j < prime_count && prime_table[j] <= e; j++) {
             prime_list[i * now] = now;
             if (i % now == 0) break;
         }
