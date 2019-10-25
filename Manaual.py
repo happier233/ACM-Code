@@ -47,7 +47,7 @@ def InitSetting():
         if not op in ['n', 'N', 'no', 'No', 'NO']:
             global TITLE, SCHOOL, TEAM, FILE
             for key in ['TITLE', 'SCHOOL', 'TEAM', 'FILE']:
-                globals()[key] = SettingData[key]
+                globals()[key] = SettingData[key].encode('utf-8')
         else:
             NewSetting()
     except:
@@ -64,7 +64,7 @@ def NewSetting():
     Data = dict()
     for key in ['TITLE', 'SCHOOL', 'TEAM', 'FILE']:
         Data[key] = globals()[key]
-    json.dump(Data, open('setting.dat', 'w'))
+    json.dump(Data, open('setting.dat', 'w'), ensure_ascii=False, sort_keys=True, indent=4)
 
 
 def Clear():
