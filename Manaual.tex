@@ -1389,6 +1389,235 @@ struct PSegTree {
         return l;
     }
 } tree;\end{lstlisting}
+\subsection{伸展树Splay}
+\begin{lstlisting}
+const int N = int(1e6 + 100);
+
+struct Node;
+Node *tail, *null;
+// 回收栈
+Node *st[N], **stop;
+
+struct Node {
+    // 内存池
+    static Node pool[N];
+
+    Node *ch[2], *fa;
+    bool rev, edit;
+    int size, val;
+    ll sum;
+    ll dpl, dpr, dpm; // 左端开始最大，右端开始最大，实际最大
+
+    // 初始化内存池
+    static void init() {
+        null = tail = pool;
+        null->clear();
+        stop = st;
+    }
+
+    // 清空当前
+    inline void clear(int _val = 0, int _size = 0) {
+        edit = rev = false;
+        sum = val = _val;
+        size = _size;
+        fa = ch[0] = ch[1] = null;
+        dpl = dpr = dpm = _val;
+    }
+
+    inline void push_up() {
+        if (this == null) return;
+        size = ch[0]->size + ch[1]->size + 1;
+        sum = ch[0]->sum + ch[1]->sum + val;
+        Node *x = ch[0], *y = ch[1];
+        if (size == 1) {
+            dpl = dpr = dpm = val;
+        } else if (y == null) {
+            dpl = max(x->dpl, x->sum + val);
+            dpr = max(1ll * val, val + x->dpr);
+            dpm = max(x->dpm, val + max(x->dpr, 0ll));
+        } else if (x == null) {
+            dpl = max(1ll * val, val + y->dpl);
+            dpr = max(y->dpr, y->sum + val);
+            dpm = max(y->dpm, val + max(y->dpl, 0ll));
+        } else {
+            dpl = max(x->dpl, max(x->sum + val, x->sum + val + y->dpl));
+            dpr = max(y->dpr, max(y->sum + val, y->sum + val + x->dpr));
+            dpm = max(max(x->dpm, y->dpm), val + max(x->dpr, 0ll) + max(y->dpl, 0ll));
+        }
+    }
+
+    // 设置儿子
+    inline void setc(Node *p, int d) { ch[d] = p, p->fa = this; }
+
+    // 获取方向
+    inline bool d() { return fa->ch[1] == this; }
+
+    inline void update_rev() {
+        if (this == null) return;
+        swap(ch[0], ch[1]);
+        swap(dpl, dpr);
+        rev ^= 1;
+    }
+
+    inline void update_val(int v) {
+        if (this == null) return;
+        val = v;
+        sum = 1ll * size * v;
+        edit = 1;
+        dpl = dpr = dpm = max(1ll * val, sum);
+    }
+
+    inline void push_down() {
+        if (this == null) return;
+        if (rev) {
+            ch[0]->update_rev(), ch[1]->update_rev();
+            rev = 0;
+        }
+        if (edit) {
+            ch[0]->update_val(val), ch[1]->update_val(val);
+            edit = 0;
+        }
+    }
+
+    inline bool isroot() {
+        return fa == null || (this != fa->ch[0] && this != fa->ch[1]);
+    }
+};
+
+Node Node::pool[N];
+
+// 获取第k个
+Node *get_kth(Node *x, int k) {
+    while (x->ch[0]->size + 1 != k) {
+        x->push_down();
+        if (x->ch[0]->size >= k) {
+            x = x->ch[0];
+        } else {
+            k -= x->ch[0]->size + 1;
+            x = x->ch[1];
+        }
+    }
+    return x;
+}
+
+void rotate(Node *x) {
+    Node *f = x->fa, *ff = f->fa;
+    f->push_down();
+    x->push_down();
+    int c = x->d(), cc = f->d();
+    f->setc(x->ch[!c], c);
+    x->setc(f, !c);
+    if (ff->ch[cc] == f) ff->setc(x, cc);
+    else x->fa = ff;
+    f->push_up();
+}
+
+void splay(Node *&root, Node *x, Node *goal) {
+    for (Node *f; (f = x->fa) != goal; rotate(x)) {
+        if (f->fa == goal) continue;
+        f->fa->push_down();
+        f->push_down();
+        x->push_down();
+        rotate(x->d() == f->d() ? f : x);
+    }
+    x->push_up();
+    if (goal == null) root = x;
+}
+
+int a[N];
+
+// 获取有效节点
+inline Node *getNode() { return stop == st ? ++tail : *--stop; }
+
+Node *build(int l, int r) {
+    int mid = (l + r) >> 1;
+    Node *root = getNode();
+    root->clear();
+    root->val = a[mid];
+    root->size = 1;
+    if (l < mid) root->setc(build(l, mid - 1), 0);
+    if (r > mid) root->setc(build(mid + 1, r), 1);
+    root->push_up();
+    return root;
+}
+
+// l->root, r->root.ch[1]
+inline Node *make(Node *&root, int l, int r) {
+    Node *x = get_kth(root, l);
+    splay(root, x, null);
+    Node *y = get_kth(root, r);
+    splay(root, y, root);
+    return y;
+}
+
+// 插入p子树
+inline void insert(Node *&root, int l, int r, Node *p) {
+    Node *x = make(root, l, r);
+    x->setc(p, 0);
+    x->push_up();
+    x->fa->push_up();
+}
+
+// 回收内存
+inline void clear(Node *&x) {
+    if (x == null) return;
+    auto now = stop;
+    *stop++ = x;
+    while (now != stop) {
+        x = *now++;
+        if (x->ch[0] != null) *stop++ = x->ch[0];
+        if (x->ch[1] != null) *stop++ = x->ch[1];
+    }
+}
+
+// 释放子树
+inline void del(Node *&root, int l, int r) {
+    Node *x = make(root, l, r);
+    clear(x->ch[0]);
+    x->ch[0] = null;
+    x->push_up();
+    x->fa->push_up();
+}
+
+// 转向
+inline void reverse(Node *&root, int l, int r) {
+    Node *x = make(root, l, r);
+    x->ch[0]->update_rev();
+    x->push_up();
+    x->fa->push_up();
+}
+
+// set value
+inline void make_same(Node *&root, int l, int r, int val) {
+    Node *x = make(root, l, r);
+    x->ch[0]->update_val(val);
+    x->push_up();
+    x->fa->push_up();
+}
+
+// 求和
+inline ll sum(Node *&root, int l, int r) {
+    Node *x = make(root, l, r);
+    return x->ch[0]->sum;
+}
+
+// 求最大子串和
+inline ll maxsum(Node *&root, int l, int r) {
+    Node *x = make(root, l, r);
+    return x->ch[0]->dpm;
+}
+
+void debug(Node *root) {
+    function<void(Node *)> dfs = [&dfs](Node *x) {
+        if (x == null) return;
+        x->push_down();
+        dfs(x->ch[0]);
+        cout << x->val << ' ';
+        dfs(x->ch[1]);
+    };
+    dfs(root);
+    cout << endl;
+}\end{lstlisting}
 \clearpage\section{图论}
 \subsection{Graph}
 \begin{lstlisting}
@@ -2446,6 +2675,175 @@ void cdq(int l, int r) {
     copy(p + t2, p + r, et + k);
     copy(et, et + (r - l), p + l);
 }\end{lstlisting}
+\subsection{树分治-点分治}
+\begin{lstlisting}
+// 题意: n个节点的树，存在边权，范围1e18
+// 求任意两点之间点集的子集中两点之间路径异或和为0的个数
+// u<v,u'<v',(u',v') ∈ path(u,v),求path(u', v')异或和==0
+
+struct Edge {
+    int to, nxt;
+    ll w;
+};
+const int N = int(1e5 + 10);
+const int M = N << 1;
+
+struct Grahp {
+    int head[N];
+    Edge eg[M];
+    int tot;
+
+    void init(int n) {
+        memset(head, -1, sizeof(int) * ++n);
+    }
+
+    inline void addEdge(int u, int v, ll w) {
+        eg[tot] = {v, head[u], w};
+        head[u] = tot++;
+    }
+} gh;
+
+bool vis[N];
+// q队列, fa祖先, sz是子树大小, smx是子树最大
+int q[N], fa[N], sz[N], smx[N];
+
+int froot(int s) {
+    int l, r, mn = N, rt = 0;
+    q[l = r = 1] = s;
+    while (l <= r) {
+        int u = q[l++];
+        sz[u] = 1;
+        smx[u] = 0;
+        for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
+            int v = gh.eg[i].to;
+            if (v == fa[u] || vis[v]) continue;
+            fa[v] = u;
+            q[++r] = v;
+        }
+    }
+    // 反向遍历所有点算size
+    while (--l) {
+        int u = q[l];
+        int mx = max(smx[u], r - sz[u]);
+        if (mx < mn) mn = mx, rt = u;
+        if (l == 1) break; // 根节点没有fa
+        sz[fa[u]] += sz[u];
+        smx[fa[u]] = max(smx[fa[u]], sz[u]);
+    }
+    return rt;
+}
+
+// sons子树方向节点个数, val根到该节点异或和, gc边后继方向的节点个数
+int sons[N], gc[M];
+ll val[N];
+ll ans = 0;
+int n;
+
+const int MOD = int(1e9 + 7);
+
+ll nums[N];
+int cnt[N];
+
+void go(int s, int rt) {
+    fa[s] = rt;
+    val[s] = 0;
+    int l, r;
+    // 不计算s
+    q[l = r = 0] = s;
+    int m = 0;
+    while (l <= r) {
+        int u = q[l++];
+        nums[m++] = val[u];
+        for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
+            int v = gh.eg[i].to;
+            if (v == fa[u] || vis[v]) continue;
+            fa[v] = u;
+            q[++r] = v;
+            val[v] = val[u] ^ gh.eg[i].w;
+            // 这个点方向后面有多少点
+            sons[v] = gc[i];
+        }
+    }
+    sort(nums, nums + m);
+    m = unique(nums, nums + m) - nums;
+    mst(cnt, 0, m);
+    // 遍历分支
+    for (int j = gh.head[s]; ~j; j = gh.eg[j].nxt) {
+        // 分支的根
+        int du = gh.eg[j].to;
+        if (vis[du]) continue;
+        q[l = r = 1] = du;
+        while (l <= r) {
+            int u = q[l++];
+            int k = lower_bound(nums, nums + m, val[u]) - nums;
+            (ans += 1ll * sons[u] * cnt[k] % MOD) %= MOD;
+            if (val[u] == 0) {
+                (ans += 1ll * sons[u] * (n - gc[j]) % MOD) %= MOD;
+            }
+            for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
+                int v = gh.eg[i].to;
+                if (v == fa[u] || vis[v]) continue;
+                q[++r] = v;
+            }
+        }
+        // 增加这个方向的值
+        while (--l) {
+            int u = q[l];
+            int k = lower_bound(nums, nums + m, val[u]) - nums;
+            (cnt[k] += sons[u]) %= MOD;
+        }
+    }
+}
+
+void work(int u) {
+    // 换根
+    u = froot(u);
+    vis[u] = true;
+    go(u, 0);
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
+        int v = gh.eg[i].to;
+        if (vis[v]) continue;
+        work(v);
+    }
+}
+
+// 预处理边后继节点个数
+int pdfs(int u, int f) {
+    int fg_id = -1;
+    int s = 1;
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
+        int v = gh.eg[i].to;
+        if (v == f) { // 记录父边ID
+            fg_id = i;
+            continue;
+        }
+        int c = pdfs(v, u);
+        gc[i] = c;
+        s += c;
+    }
+    // 存在父边
+    if (~fg_id) gc[fg_id] = n - s;
+    return s;
+}
+
+void solve() {
+    while (cin >> n) {
+        gh.init(n);
+        for (int i = 2; i <= n; i++) {
+            int u, v;
+            ll w;
+            u = i;
+            cin >> v >> w;
+            gh.addEdge(u, v, w);
+            gh.addEdge(v, u, w);
+        }
+        mst(vis, false, n + 1);
+        pdfs(1, 0);
+        ans = 0;
+        work(1);
+        cout << ans << endl;
+    }
+}\end{lstlisting}
 \clearpage\section{数论}
 \subsection{线性基}
 \begin{lstlisting}
@@ -3326,8 +3724,8 @@ void initPrime() {
     for (int i = 2; i < PMAX; i++) {
         if (!prime_list[i])
             prime_table[prime_count++] = i;
-        for (int j = 0, e = PMAX / i;
-             j < prime_count && prime_table[j] < e; j++) {
+        for (int j = 0, e = (PMAX - 1) / i;
+             j < prime_count && prime_table[j] <= e; j++) {
             prime_list[i * prime_table[j]] = true;
             if (i % prime_table[j] == 0) break;
         }
@@ -3346,8 +3744,8 @@ void initPrime() {
     for (int i = 2; i < PMAX; i++) {
         if (!prime_list[i])
             prime_list[i] = prime_table[prime_count++] = i;
-        for (int j = 0, e = PMAX / i, now; 
-        	j < prime_count && (now = prime_table[j]) < e; j++) {
+        for (int j = 0, e = (PMAX - 1) / i, now;
+             j < prime_count && prime_table[j] <= e; j++) {
             prime_list[i * now] = now;
             if (i % now == 0) break;
         }
