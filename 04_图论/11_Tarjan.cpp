@@ -26,3 +26,14 @@ void tarjan(int u) {
         } while (u != v);
     }
 }
+
+void work() {
+    fill_n(dfn, n + 1, 0);
+    fill_n(num, n + 1, 0);
+    fill_n(inst, n + 1, false);
+    idx = top = scc = 0;
+    for (int i = 1; i <= n; i++) {
+        if (!dfn[i])
+            tarjan(i);
+    }
+}
