@@ -1219,44 +1219,42 @@ struct PSegTree {
 \begin{lstlisting}
 // m: update count,MAXN>=m*log(n)^2
 const int N = int(2e5 + 10);
-const int MAXN = int(4e7 + 10);
+const int MAXN = int(2e7 + 10);
+const int MAXM = int(2e7 + 10);
 const int LN = 40;
 
 struct PSegTree {
     const int *a;
     pii ran;
     int n;
-    int c[MAXN];
+    ll c[MAXN];
     int tot = 0;
     int lson[MAXN], rson[MAXN];
     // t: static root, s: dynamic root
-    int t[N], s[N];
-
-    int build(int l, int r) {
-        int k = ++tot;
-        c[k] = 0;
-        if (l == r) {
-            return k;
-        }
-        int mid = (l + r) >> 1;
-        lson[k] = build(l, mid);
-        rson[k] = build(mid + 1, r);
-        return k;
-    }
+    int s[N], t[N];
 
     // SegTree Range and n points, num can be nullptr
-    int init(int l, int r, int _n, const int num[]) {
+    void init(int l, int r, int _n, const int num[]) {
         tot = 0;
         a = num;
         ran = {l, r};
         n = _n;
-        int rt = build(l, r);
-        for (int i = 0; i <= n; i++) t[i] = s[i] = rt;
-        return rt;
+        for (int i = 0; i <= n; i++) s[i] = t[i] = 0;
+        // init node 0
+        lson[0] = rson[0] = 0;
+        c[0] = 0;
+    }
+
+    inline int get(int &k, bool flag) {
+        if (k == 0 || flag) {
+            k = ++tot;
+            lson[k] = rson[k] = 0;
+        }
+        return k;
     }
 
     // update the root in k
-    void update(int k[], int rt[], int cnt, int p, int v) {
+    void update(int k[], int rt[], int cnt, int p, int v, bool flag = false) {
         // calc
         for (int i = 0; i < cnt; i++)
             c[k[i]] = c[rt[i]] + v;
@@ -1268,13 +1266,15 @@ struct PSegTree {
             if (p <= mid) {
                 // go left
                 for (int i = 0; i < cnt; i++) {
-                    rson[k[i]] = rson[rt[i]], rt[i] = lson[rt[i]], k[i] = lson[k[i]] = ++tot;
+                    rson[k[i]] = rson[rt[i]];
+                    rt[i] = lson[rt[i]], k[i] = get(lson[k[i]], flag);
                 }
                 r = mid;
             } else {
                 // go right
                 for (int i = 0; i < cnt; i++) {
-                    lson[k[i]] = lson[rt[i]], rt[i] = rson[rt[i]], k[i] = rson[k[i]] = ++tot;
+                    lson[k[i]] = lson[rt[i]];
+                    rt[i] = rson[rt[i]], k[i] = get(rson[k[i]], flag);
                 }
                 l = mid + 1;
             }
@@ -1285,82 +1285,78 @@ struct PSegTree {
     }
 
     // build static tree
-    inline void change(int pos, int p, int v) {
-        if (v == 0) { // no change
-            t[pos] = t[pos - 1];
-        } else {
-            // use int as the int[]
-            // must use variable because I use the pointer
-            int rt = t[pos - 1];
-            int k = t[pos] = ++tot;
-            update(&k, &rt, 1, p, v);
-        }
+    void change(int pos, int p, int v) {
+        // use int as the int[]
+        // must use variable because I use the pointer
+        int rt = t[pos - 1];
+        int k = t[pos] = ++tot;
+        update(&k, &rt, 1, p, v, true);
     }
 
     int use1[LN], use2[LN];
 
     // edit dynamic tree
-    inline void add(int pos, int p, int v) {
+    void add(int pos, int p, int v) {
         // memory reuse
         int *k = use1, *rt = use2;
         int cnt = 0;
         for (int i = pos; i <= n; i += (i & -i), cnt++) {
-            rt[cnt] = s[i], s[i] = k[cnt] = ++tot;
+            rt[cnt] = s[i], k[cnt] = get(s[i], false);
         }
         update(k, rt, cnt, p, v);
     }
 
     // calc lson value in use
-    inline int sum(int use[], int cnt) {
-        int ans = 0;
+    inline ll sum(int use[], int cnt) {
+        ll ans = 0;
         for (int i = 0; i < cnt; i++)
             ans += c[lson[use[i]]];
         return ans;
     }
 
     // calc value in use
-    inline int calc(int use[], int cnt) {
-        int ans = 0;
+    inline ll calc(int use[], int cnt) {
+        ll ans = 0;
         for (int i = 0; i < cnt; i++)
             ans += c[use[i]];
         return ans;
     }
 
     // ans=p1-p2
-    int querySum(int p1, int p2, int k) {
-        int r1 = t[p1], r2 = t[p2];
-        int cnt1 = 0, cnt2 = 0;
+    ll querySum(int p1, int p2, int k) {
+        int rt1 = t[p1], rt2 = t[p2];
+        ll cnt1 = 0, cnt2 = 0;
         // calc root in need
         for (int i = p1; i; i -= (i & -i)) use1[cnt1++] = s[i];
         for (int i = p2; i; i -= (i & -i)) use2[cnt2++] = s[i];
         int l, r;
         tie(l, r) = ran;
-        int ans = 0;
+        ll ans = 0;
         while (l < r) {
             int mid = (l + r) >> 1;
-            int cnt = c[lson[r1]] - c[lson[r2]] + sum(use1, cnt1) - sum(use2, cnt2);
             if (k <= mid) {
                 // go left
-                r1 = lson[r1], r2 = lson[r2];
+                rt1 = lson[rt1], rt2 = lson[rt2];
                 for (int i = 0; i < cnt1; i++) use1[i] = lson[use1[i]];
                 for (int i = 0; i < cnt2; i++) use2[i] = lson[use2[i]];
                 r = mid;
             } else {
                 // go right
+                ll cnt = sum(use1, cnt1) - sum(use2, cnt2) + c[lson[rt1]] - c[lson[rt2]];
                 ans += cnt;
-                r1 = rson[r1], r2 = rson[r2];
+                rt1 = rson[rt1], rt2 = rson[rt2];
                 for (int i = 0; i < cnt1; i++) use1[i] = rson[use1[i]];
                 for (int i = 0; i < cnt2; i++) use2[i] = rson[use2[i]];
                 l = mid + 1;
             }
         }
-        int cnt = c[r1] - c[r2] + calc(use1, cnt1) - calc(use2, cnt2);
+        ll cnt = calc(use1, cnt1) - calc(use2, cnt2) + c[rt1] - c[rt2];
         ans += cnt;
         return ans;
     }
 
     // query k
-    int query(int p1, int p2, int k) {
+    int queryK(int p1, int p2, int k) {
         int r1 = t[p1], r2 = t[p2];
         int cnt1 = 0, cnt2 = 0;
         // calc root in need
@@ -1618,6 +1614,135 @@ void debug(Node *root) {
     dfs(root);
     cout << endl;
 }\end{lstlisting}
+\subsection{带权并查集}
+\begin{lstlisting}
+const int N = 100005;
+int f[N], deep[N], d[N];
+
+void init(int n) {
+    for (int i = 0; i <= n; i++) f[i] = i, d[i] = 0;
+}
+
+int fa(int x) {
+    if (f[x] == x) return x;
+    int fx = fa(f[x]);
+    (d[x] += d[f[x]]) %= 3;
+    return f[x] = fx;
+}
+
+bool un(int x, int y, int dis) {
+    int fx = fa(x), fy = fa(y);
+    if (fx == fy) {
+        return ((d[y] - d[x] + 3) % 3 != dis);
+    }
+    int w = (3 + (d[x] - d[y]) + dis) % 3;
+    // 按轶合并
+    if (deep[fx] < deep[fy]) {
+        swap(fx, fy);
+        w = (3 - w) % 3;
+    }
+    f[fy] = fx;
+    d[fy] = w;
+    // 按轶合并
+    deep[fx] += deep[fx] == deep[fy];
+    return true;
+}\end{lstlisting}
+\subsection{可持久化并查集}
+\begin{lstlisting}
+const int N = int(2e5 + 10);
+const int MAXN = N * 150;
+
+struct PArray {
+    int tot = 0;
+    struct node {
+        int val, deep;
+    } c[MAXN];
+    int lson[MAXN], rson[MAXN];
+    pii ran;
+
+    int build(int l, int r) {
+        int k = tot++;
+        if (l == r) {
+            c[k].val = l;
+            return k;
+        }
+        int mid = (l + r) >> 1;
+        lson[k] = build(l, mid);
+        rson[k] = build(mid + 1, r);
+        return k;
+    }
+
+    int init(int l, int r) {
+        ran = {l, r};
+        return build(l, r);
+    }
+
+    int update(int rt, int p, node w) {
+        int l = ran.first, r = ran.second;
+        int k = tot++, rst = k;
+        while (l < r) {
+            lson[k] = lson[rt], rson[k] = rson[rt];
+            int mid = (l + r) >> 1;
+            if (p <= mid) {
+                rt = lson[rt];
+                k = lson[k] = tot++;
+                r = mid;
+            } else {
+                rt = rson[rt];
+                k = rson[k] = tot++;
+                l = mid + 1;
+            }
+        }
+        c[k].val = w.val;
+        c[k].deep = c[rt].deep + w.deep;
+        return rst;
+    }
+
+    node query(int rt, int p) {
+        int l = ran.first, r = ran.second;
+        while (l < r) {
+            int mid = (l + r) >> 1;
+            if (p <= mid) {
+                rt = lson[rt];
+                r = mid;
+            } else {
+                rt = rson[rt];
+                l = mid + 1;
+            }
+        }
+        return c[rt];
+    }
+};
+
+struct PDSU {
+    PArray tree;
+    int root[N];
+
+    void init(int n) {
+        root[0] = tree.init(1, n);
+    }
+
+    PArray::node fa(int rt, int x) {
+        PArray::node u = tree.query(root[rt], x);
+        while (u.val != x) {
+            x = u.val;
+            u = tree.query(root[rt], x);
+        }
+        return u;
+    }
+
+    inline void change(int rt, int k) {
+        root[k] = root[rt];
+    }
+
+    inline void un(int rt, int x, int y) {
+        auto fx = fa(rt, x), fy = fa(rt, y);
+        if (fx.val == fy.val) return;
+        if (fx.deep > fy.deep) swap(fx, fy);
+        root[rt] = tree.update(root[rt], fx.val, {fy.val, fx.deep});
+        if (fx.deep == fy.deep) root[rt] = tree.update(root[rt], fy.val, {fy.val, fy.deep + 1});
+    }
+} dsu;\end{lstlisting}
 \clearpage\section{图论}
 \subsection{Graph}
 \begin{lstlisting}
@@ -2366,6 +2491,17 @@ void tarjan(int u) {
             num[scc]++;
         } while (u != v);
     }
+}
+
+void work() {
+    fill_n(dfn, n + 1, 0);
+    fill_n(num, n + 1, 0);
+    fill_n(inst, n + 1, false);
+    idx = top = scc = 0;
+    for (int i = 1; i <= n; i++) {
+        if (!dfn[i])
+            tarjan(i);
+    }
 }\end{lstlisting}
 \subsection{支配树}
 \begin{lstlisting}
@@ -2844,6 +2980,388 @@ void solve() {
         cout << ans << endl;
     }
 }\end{lstlisting}
+\subsection{DsuOnTree1}
+\begin{lstlisting}
+/*
+DSU On Tree 树上启发式合并
+进行轻重链剖分，每次先递归轻链，然后消除轻儿子影响，然后计算重儿子，并且保留重儿子结果
+然后以常数级别复杂度将重儿子状态修改成当前节点状态！！！（<------重点）
+然后递归计算当前子树结果
+复杂度O(nlogn)*O(计算/更新)
+
+[CF741D]一棵有根树，边上有字母a~v，求每个子树中最长的边，满足这个边上的所有字母重排后可以构成回文。
+很容易想到点分治，但由于是有根树，所以点分治是做不了的。
+先对没给点记录xn[x]表示x到根的路径的各个字母出现奇偶性，然后b[S]记录满足xn[x]=S的所有点x的最大深度。
+类似点分治，一棵子树一棵子树地处理，每次先对子树内每个点查找之前子树中是否有能与它拼成回文串的点与它的最大深度，再更新b[]。
+注意查找和更新不能同时进行，要整棵子树都查询完毕之后再进行更新操作。注意查找与更新当前子树的根。
+我试图去写了一个一次进出完整查询和更新的代码，逻辑是先查询后进入最后更新，但没有合适的写法，难度太大
+ */
+
+const int N = 500005;
+const int M = N << 1;
+struct Edge {
+    int to, next;
+};
+
+struct Gragh {
+    int head[N];
+    Edge eg[M];
+    int tot;
+
+    void init(int n) {
+        tot = 0;
+        memset(head, -1, sizeof(int) * ++n);
+    }
+
+    inline void addEdge(int u, int v) {
+        eg[tot] = {v, head[u]};
+        head[u] = tot++;
+    }
+} gh;
+
+int tsz[N], son[N], cson;
+int dep[N] = {0};
+
+void pdfs(int u, int f) {
+    dep[u] = dep[f] + 1;
+    tsz[u] = 1;
+    son[u] = -1;
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == f) continue;
+        pdfs(v, u);
+        tsz[u] += tsz[v];
+        if (son[u] == -1 || tsz[v] > tsz[son[u]]) son[u] = v;
+    }
+}
+
+bool ans[N];
+char s[N];
+int p[N];
+
+void calc(int u, int f, int d) {
+    p[dep[u]] ^= (1 << (s[u] - 'a'));
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == f || v == cson) continue;
+        calc(v, u, d);
+    }
+}
+
+void dfs(int u, int f, int d) {
+    // 遍历轻儿子，结果删除
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == f || v == son[u]) continue;
+        dfs(v, u, 0);
+    }
+    if (~son[u]) { // 计算重儿子，结果保留
+        dfs(son[u], u, 1);
+        cson = son[u];
+    }
+    calc(u, f, 1);
+    cson = -1;
+    for (int i = qry.head[u]; ~i; i = qry.eg[i].next) {
+        int h = qry.eg[i].to;
+        ans[i] = __builtin_popcount(p[h]) <= 1;
+    }
+    if (d == 0) { // 删除当前子树结果
+        calc(u, f, -1);
+    }
+}
+
+void solve() {
+    int n, m;
+    while (cin >> n >> m) {
+        gh.init(n);
+        qry.init(n);
+        for (int i = 2; i <= n; i++) {
+            int u;
+            cin >> u;
+            gh.addEdge(u, i);
+        }
+        s[0] = ' ';
+        cin >> (s + 1);
+        rep(i, 0, m) {
+            int v, h;
+            cin >> v >> h;
+            qry.addEdge(v, h);
+        }
+        pdfs(1, 0);
+        dfs(1, 0, 0);
+        rep(i, 0, m) {
+            cout << (ans[i] ? "Yes" : "No") << endl;
+        }
+    }
+}
+
+const int N = 500005;
+const int M = N << 1;
+struct Edge {
+    int to, next;
+};
+
+struct Gragh {
+    int head[N];
+    Edge eg[M];
+    int tot;
+
+    void init(int n) {
+        tot = 0;
+        memset(head, -1, sizeof(int) * ++n);
+    }
+
+    inline void addEdge(int u, int v) {
+        eg[tot] = {v, head[u]};
+        head[u] = tot++;
+    }
+} gh, qry;
+
+int tsz[N], son[N], dep[N] = {0}, fa[N], cson;
+int xn[N];
+int a[N];
+
+void pdfs(int u, int f) {
+    fa[u] = f;
+    dep[u] = dep[f] + 1;
+    tsz[u] = 1;
+    son[u] = -1;
+
+    xn[u] = xn[f] ^ a[u];
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == f) continue;
+        pdfs(v, u);
+        tsz[u] += tsz[v];
+        if (son[u] == -1 || tsz[v] > tsz[son[u]]) son[u] = v;
+    }
+}
+
+
+int b[1 << 22];
+int rst, ans[N], mx, root;
+int num[N], tot = 0;
+
+void check(int u) {
+    int bs = xn[u];
+    if (b[bs]) {
+        rst = max(rst, dep[u] + b[bs] - dep[root] * 2);
+    }
+    for (int i = 0; i < 22; i++) {
+        int bt = bs ^(1 << i);
+        if (b[bt]) {
+            rst = max(rst, dep[u] + b[bt] - dep[root] * 2);
+        }
+    }
+    bs ^= xn[root];
+    if (bs == (bs & (-bs))) {
+        rst = max(rst, dep[u] - dep[root]);
+    }
+}
+
+void calc(int u) {
+    check(u);
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == fa[u]) continue;
+        calc(v);
+    }
+}
+
+void add(int u) {
+    if (b[xn[u]]) {
+        b[xn[u]] = max(b[xn[u]], dep[u]);
+    } else {
+        b[xn[u]] = dep[u];
+        num[tot++] = xn[u];
+    }
+    if (u == cson) return;
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == fa[u]) continue;
+        add(v);
+    }
+}
+
+void go(int u) {
+    rst = 0;
+    if (~son[u]) {
+        rst = 1;
+        root = son[u];
+        check(son[u]);
+        add(son[u]);
+    }
+    root = u;
+    check(u);
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == fa[u] || v == cson) continue;
+        calc(v);
+        add(v);
+    }
+}
+
+void del() {
+    for (int i = 0; i < tot; b[num[i++]] = 0);
+    tot = 0;
+}
+
+void dfs(int u, int d) {
+    // 遍历轻儿子，结果删除
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == fa[u] || v == son[u]) continue;
+        dfs(v, 0);
+    }
+    if (~son[u]) { // 计算重儿子，结果保留
+        dfs(son[u], 1);
+        cson = son[u];
+    }
+    go(u); // 计算当前
+    cson = -1;
+    ans[u] = rst;
+    if (d == 0) {
+        del();
+    }
+}
+
+void dfs2(int u) {
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        dfs2(v);
+        ans[u] = max(ans[u], ans[v]);
+    }
+}
+
+void input(int n) {
+    a[1] = 0;
+    for (int i = 2; i <= n; i++) {
+        int f;
+        char c;
+        cin >> f >> c;
+        gh.addEdge(f, i);
+        a[i] = 1 << (c - 'a');
+    }
+}
+
+void solve() {
+    int n;
+    while (cin >> n) {
+        gh.init(n);
+        input(n);
+        memset(b, 0, sizeof(b));
+        pdfs(1, 0);
+        dfs(1, 0);
+        dfs2(1);
+        for (int i = 1; i <= n; i++) {
+            printf("%d%c", ans[i], " \n"[i == n]);
+        }
+    }
+}\end{lstlisting}
+\subsection{DsuOnTree2}
+\begin{lstlisting}
+/*
+[CF570D]一棵树，询问某棵子树指定深度(对于树根的深度)的点能否构成回文。
+用二进制记录每个深度的每个字母出现次数的奇偶性即可。
+ */
+
+const int N = 500005;
+const int M = N << 1;
+struct Edge {
+    int to, next;
+};
+
+struct Gragh {
+    int head[N];
+    Edge eg[M];
+    int tot;
+
+    void init(int n) {
+        tot = 0;
+        memset(head, -1, sizeof(int) * ++n);
+    }
+
+    inline void addEdge(int u, int v) {
+        eg[tot] = {v, head[u]};
+        head[u] = tot++;
+    }
+} gh, qry;
+
+int tsz[N], son[N], cson;
+int dep[N] = {0};
+
+void pdfs(int u, int f) {
+    dep[u] = dep[f] + 1;
+    tsz[u] = 1;
+    son[u] = -1;
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == f) continue;
+        pdfs(v, u);
+        tsz[u] += tsz[v];
+        if (son[u] == -1 || tsz[v] > tsz[son[u]]) son[u] = v;
+    }
+}
+
+bool ans[N];
+char s[N];
+int p[N];
+
+void calc(int u, int f, int d) {
+    p[dep[u]] ^= (1 << (s[u] - 'a'));
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == f || v == cson) continue;
+        calc(v, u, d);
+    }
+}
+
+void dfs(int u, int f, int d) {
+    // 遍历轻儿子，结果删除
+    for (int i = gh.head[u]; ~i; i = gh.eg[i].next) {
+        int v = gh.eg[i].to;
+        if (v == f || v == son[u]) continue;
+        dfs(v, u, 0);
+    }
+    if (~son[u]) { // 计算重儿子，结果保留
+        dfs(son[u], u, 1);
+        cson = son[u];
+    }
+    calc(u, f, 1);
+    cson = -1;
+    for (int i = qry.head[u]; ~i; i = qry.eg[i].next) {
+        int h = qry.eg[i].to;
+        ans[i] = __builtin_popcount(p[h]) <= 1;
+    }
+    if (d == 0) { // 删除当前子树结果
+        calc(u, f, -1);
+    }
+}
+
+void solve() {
+    int n, m;
+    while (cin >> n >> m) {
+        gh.init(n);
+        qry.init(n);
+        for (int i = 2; i <= n; i++) {
+            int u;
+            cin >> u;
+            gh.addEdge(u, i);
+        }
+        s[0] = ' ';
+        cin >> (s + 1);
+        rep(i, 0, m) {
+            int v, h;
+            cin >> v >> h;
+            qry.addEdge(v, h);
+        }
+        pdfs(1, 0);
+        dfs(1, 0, 0);
+        rep(i, 0, m) {
+            cout << (ans[i] ? "Yes" : "No") << endl;
+        }
+    }
+}\end{lstlisting}
 \clearpage\section{数论}
 \subsection{线性基}
 \begin{lstlisting}
@@ -3087,6 +3605,18 @@ int calc(vector<pll> &p, ll r) {
     p.push_back({r, 0}), p.push_back({-r, 0}), p.push_back({0, r}), p.push_back({0, -r});
     sort(p.begin(), p.end());
     return sum;
+}\end{lstlisting}
+\subsection{线性逆元}
+\begin{lstlisting}
+// 逆元，阶乘，阶乘逆元
+ll inv[N] = {1, 1}, fac[N] = {1, 1}, ifac[N] = {1, 1};
+// 线性求逆元
+void init() {
+    for (int i = 2; i < N; i++) {
+        inv[i] = (MOD - (MOD / i)) * inv[MOD % i] % MOD;
+        fac[i] = fac[i - 1] * i % MOD;
+        ifac[i] = ifac[i - 1] * inv[i] % MOD;
+    }
 }\end{lstlisting}
 \clearpage\section{其他}
 \subsection{BigInteger}
