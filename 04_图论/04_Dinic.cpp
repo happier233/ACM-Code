@@ -1,3 +1,19 @@
+struct Graph {
+    pair<int, Edge> eg[M];
+    int head[N];
+    int tot;
+
+    void init(int n) {
+        memset(head, -1, sizeof(int) * ++n);
+        tot = 0;
+    }
+
+    inline void addEdge(int x, Edge g) {
+        eg[tot] = {head[x], g};
+        head[x] = tot++;
+    }
+} gh;
+
 struct Dinic {
     Graph gh;
     // 点的范围[0, n)
@@ -5,18 +21,19 @@ struct Dinic {
     // 弧优化
     int cur[N], dis[N];
 
-    Dinic(){};
+    Dinic() {};
 
     // 设置N
     void init(int _n) {
-        n = _n;
+        n = _n + 1;
         gh.init(n);
     }
 
     // 加流量
     void addFlow(int x, int y, ll f) {
-        gh.addEdge(x, y, f);
-        gh.addEdge(y, x, 0);
+        printf("%d->%d: %lld\n", x, y, f);
+        gh.addEdge(x, {y, f});
+        gh.addEdge(y, {x, 0});
     }
 
     bool bfs(int s, int e) {
@@ -28,10 +45,12 @@ struct Dinic {
         q[r++] = s;
         while (l < r) {
             int f = q[l++];
-            for (int i = gh.head[f]; ~i; i = gh.eg[i].nxt) {
-                if (gh.eg[i].v > 0 && dis[gh.eg[i].e] == -1) {
-                    dis[gh.eg[i].e] = dis[f] + 1;
-                    q[r++] = gh.eg[i].e;
+            for (int i = gh.head[f]; ~i; i = gh.eg[i].first) {
+                auto &eg = gh.eg[i].second;
+                int to = eg.to;
+                if (eg.w > 0 && dis[to] == -1) {
+                    dis[to] = dis[f] + 1;
+                    q[r++] = to;
                 }
             }
         }
@@ -43,12 +62,12 @@ struct Dinic {
             return mx;
         }
         ll flow = 0;
-        for (int &k = cur[s]; ~k; k = gh.eg[k].nxt) {
-            auto &eg = gh.eg[k];
+        for (int &k = cur[s]; ~k; k = gh.eg[k].first) {
+            auto &eg = gh.eg[k].second;
             ll a;
-            if (eg.v > 0 && dis[eg.e] == dis[s] + 1 && (a = dfs(eg.e, e, min(eg.v, mx)))) {
-                eg.v -= a;
-                gh.eg[k ^ 1].v += a;
+            if (eg.w > 0 && dis[eg.to] == dis[s] + 1 && (a = dfs(eg.to, e, min(eg.w, mx)))) {
+                eg.w -= a;
+                gh.eg[k ^ 1].second.w += a;
                 flow += a;
                 mx -= a;
                 if (mx <= 0) break;
