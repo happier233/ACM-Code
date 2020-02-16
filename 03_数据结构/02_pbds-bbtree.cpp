@@ -11,7 +11,7 @@ find_by_order(size_t order);
 tree_order_statistics_node_update
 insert(p);
 erase(it);
-// 求k在树中是第几大:
+// 求k在树中是第几小,假设插入当前值判断当前值是第几小,最小为第0小
 order_of_key(p);
 // 找到第order小的迭代器
 find_by_order(order);
