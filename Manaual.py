@@ -1,6 +1,5 @@
 # coding=utf-8
 import os
-import sys
 import json
 
 TexHead = r"""
@@ -38,33 +37,33 @@ TexHead = r"""
 
 def InitSetting():
     try:
-        SettingFile = file('setting.dat')
-        SettingData = json.load(SettingFile)
-        print u'读取到保存的设置: '
+        with open('setting.json', 'r', encoding='utf-8') as f:
+            SettingData = json.load(f)
+        print(u'读取到保存的设置: ')
         for key in SettingData:
-            print '[%s] %s' % (key, SettingData[key])
-        op = raw_input('是否使用已保存的设置？[Y/n]')
-        if not op in ['n', 'N', 'no', 'No', 'NO']:
+            print('[%s] %s' % (key, SettingData[key]))
+        op = input('是否使用已保存的设置？[Y/n]')
+        if op not in ['n', 'N', 'no', 'No', 'NO']:
             global TITLE, SCHOOL, TEAM, FILE
             for key in ['TITLE', 'SCHOOL', 'TEAM', 'FILE']:
                 globals()[key] = SettingData[key].encode('utf-8')
         else:
             NewSetting()
     except:
-        print u'读取设置失败'
+        print(u'读取设置失败')
         NewSetting()
 
 
 def NewSetting():
     global TITLE, SCHOOL, TEAM, FILE
-    TITLE = raw_input('请输入标题: ')
-    SCHOOL = raw_input('请输入学校: ')
-    TEAM = raw_input('请输入队名: ')
-    FILE = raw_input('请输入文件名: ')
+    TITLE = input('请输入标题: ')
+    SCHOOL = input('请输入学校: ')
+    TEAM = input('请输入队名: ')
+    FILE = input('请输入文件名: ')
     Data = dict()
     for key in ['TITLE', 'SCHOOL', 'TEAM', 'FILE']:
         Data[key] = globals()[key]
-    json.dump(Data, open('setting.dat', 'w'), ensure_ascii=False, sort_keys=True, indent=4)
+    json.dump(Data, open('setting.json', 'w'), ensure_ascii=False, sort_keys=True, indent=4)
 
 
 def Clear():
@@ -121,7 +120,7 @@ def Search(level, pwd, folder=''):
         else:
             cd = os.popen('cd "%s%s/"' % (pwd, item)).read()
             if 'Not a directory' in cd or 'No such file or directory' in cd:
-                print '[Unknown File] %s/%s' % (pwd, item)
+                print('[Unknown File] %s/%s' % (pwd, item))
             else:
                 Search(level + 1, pwd + item + '/', item)
 
@@ -136,14 +135,14 @@ if __name__ == '__main__':
 
     TargetFile = open('%s.tex' % FILE, 'w')
 
-
     # Output Head File
     TargetFile.write(TexHead)
     TargetFile.write('\\title{%s}\n' % TITLE)
     TargetFile.write('\\author{%s}\n' % TEAM)
     TargetFile.write('\\pagestyle{fancy}\n\\fancyhf{}\n\\fancyhead[C]{%s, %s}\n' % (TITLE, TEAM))
     TargetFile.write('\\begin{document}\\small\n')
-    TargetFile.write('\\begin{titlepage}\n\\begin{center}\n\\vspace*{0.5cm}\\includegraphics[width=0.75\\textwidth]{logo.jpg} \\\\ [2cm]\n')
+    TargetFile.write(
+        '\\begin{titlepage}\n\\begin{center}\n\\vspace*{0.5cm}\\includegraphics[width=0.75\\textwidth]{logo.jpg} \\\\ [2cm]\n')
     TargetFile.write('\\HRule \\\\ [1cm]\n')
     TargetFile.write('\\textbf{\\Huge{%s}} \\\\ [0.5cm]\n' % TITLE)
     TargetFile.write('\\HRule \\\\ [4cm]\n')

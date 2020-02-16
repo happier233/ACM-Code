@@ -779,147 +779,105 @@ struct SegTree {
 } tree;\end{lstlisting}
 \subsection{二维线段树}
 \begin{lstlisting}
-
-const int N = 1005;
-
+const int N = int(2e3 + 48);
+ 
+ll p[N][N];
+ 
 struct SegTree {
-
-    inline int son(int k, int x) {
-        return (k << 2) - 2 + x;
+ 
+    inline int static get(int l, int r) {
+        return (l + r) | (l != r);
     }
-
+ 
     struct node {
         int l, r;
-
-        node() = default;
-
-        node(int a, int b) : l(a), r(b) {}
-
-        inline int mid() {
-            return (l + r) >> 1;
-        }
-
-        inline node left() {
-            return node(l, mid());
-        }
-
-        inline node right() {
-            return node(mid() + 1, r);
-        }
-
-        inline bool in(int x) {
-            return x >= l && x <= r;
-        }
-
-        inline bool more() {
-            return l < r;
-        }
-
-        bool operator==(const node &t) {
-            return l == t.l && r == t.r;
-        }
+ 
+        inline int mid() { return (l + r) >> 1; }
+ 
+        inline bool point() { return l == r; }
+ 
+        inline node operator--(int) { return {l, mid()}; }
+ 
+        inline node operator++(int) { return {mid() + 1, r}; }
+ 
+        bool operator==(node t) const { return l == t.l && r == t.r; }
+ 
+        operator int() { return get(l, r); }
     };
-
-    ll c[N << 2][N << 2];
-    ll ans[N << 4];
-    ll laz[N << 4];
-
-    inline void up(int k, bool x, bool y) {
-        int s = (k << 2) - 2;
-        ll t = 0;
-        if (x) t += ans[s] + ans[s + 1] + laz[s] + laz[s + 1];
-        if (y) t += ans[s + 2] + ans[s + 3] + laz[s + 2] + laz[s + 3];
-        ans[k] = t;
+ 
+    ll s[N * 2][N * 2];
+ 
+    inline void upX(node x, node y) {
+        s[x][y] = max(s[x--][y], s[x++][y]);
     }
-
-    inline void push(int k) {
-        int s = (k << 2) - 2;
-        laz[s] += laz[k];
-        laz[s + 1] += laz[k];
-        laz[s + 2] += laz[k];
-        laz[s + 3] += laz[k];
-        ans[k] += laz[k];
-        laz[k] = 0;
+ 
+    inline void upY(node x, node y) {
+        s[x][y] = max(s[x][y--], s[x][y++]);
     }
-
-    void build(node x, node y, int k) {
-        laz[k] = 0;
-        if (x.more() && y.more()) {
-            ans[k] = c[x.l][y.l];
+ 
+    void buildY(node x, node y) {
+        if (y.point()) {
+            s[x][y] = p[x.l][y.l];
             return;
         }
-        ans[k] = 0;
-        bool ax = false;
-        bool ay = false;
-        if (x.more()) {
-            build(x.left(), y, son(k, 0));
-            build(x.right(), y, son(k, 1));
-        }
-        if (y.more()) {
-            build(x, y.left(), son(k, 2));
-            build(x, y.right(), son(k, 3));
-        }
-        up(k, x.more(), y.more());
+        buildY(x, y--);
+        buildY(x, y++);
+        upY(x, y);
+        return;
     }
-
-    void change(node x, node y, int k, node l, node r, ll v) {
-        if (x == l && y == r) {
-            laz[k] += v;
+ 
+    void mergeY(node x, node y) {
+        if (y.point()) {
+            upX(x, y);
             return;
         }
-        push(k);
-        if (x.more()) {
-            if (l.r <= x.mid()) {
-                change(x.left(), y, son(k, 0), l, r, v);
-            } else if (l.l > x.mid()) {
-                change(x.right(), y, son(k, 1), l, r, v);
-            } else {
-                change(x.left(), y, son(k, 0), node(l.l, x.mid()), r, v);
-                change(x.right(), y, son(k, 1), node(x.mid() + 1, l.r), r, v);
-            }
-        }
-        if (y.more()) {
-            if (r.l <= y.mid()) {
-                change(x, y.left(), son(k, 2), l, r, v);
-            } else if (r.r > y.mid()) {
-                change(x, y.right(), son(k, 3), l, r, v);
-            } else {
-                change(x, y.left(), son(k, 2), l, node(r.l, y.mid()), v);
-                change(x, y.right(), son(k, 3), l, node(y.mid() + 1, r.r), v);
-            }
-        }
-        up(k, x.more(), y.more());
+        mergeY(x, y--);
+        mergeY(x, y++);
+        upX(x, y);
+        return;
     }
-
-    ll query(node x, node y, int k, node l, node r) {
-        if (x == l && y == r) {
-            return ans[k] + laz[k];
+ 
+    void build(node x, node y) {
+        if (x.point()) {
+            buildY(x, y);
+            return;
         }
-        push(k);
-        ll t = 0;
-        if (x.more()) {
-            if (l.r <= x.mid()) {
-                t += query(x.left(), y, son(k, 0), l, r);
-            } else if (l.l > x.mid()) {
-                t += query(x.right(), y, son(k, 1), l, r);
-            } else {
-                t += query(x.left(), y, son(k, 0), node(l.l, x.mid()), r);
-                t += query(x.right(), y, son(k, 1), node(x.mid() + 1, l.r), r);
-            }
-        }
-        if (y.more()) {
-            if (r.l <= y.mid()) {
-                t += query(x, y.left(), son(k, 2), l, r);
-            } else if (r.r > y.mid()) {
-                t += query(x, y.right(), son(k, 3), l, r);
-            } else {
-                t += query(x, y.left(), son(k, 2), l, node(r.l, y.mid()));
-                t += query(x, y.right(), son(k, 3), l, node(y.mid() + 1, r.r));
-            }
-        }
-        return t;
+        build(x--, y);
+        build(x++, y);
+        mergeY(x, y);
+        return;
     }
-};\end{lstlisting}
+ 
+    ll queryY(node x, node y, node a, node b) {
+        if (y == b) {
+            return s[x][y];
+        }
+        int mid = y.mid();
+        if (b.r <= mid) {
+            return queryY(x, y--, a, b);
+        } else if (b.l > mid) {
+            return queryY(x, y++, a, b);
+        } else {
+            return max(queryY(x, y--, a, {b.l, mid}),
+                       queryY(x, y++, a, {mid + 1, b.r}));
+        }
+    }
+ 
+    ll query(node x, node y, node a, node b) {
+        if (x == a) {
+            return queryY(x, y, a, b);
+        }
+        int mid = x.mid();
+        if (a.r <= mid) {
+            return query(x--, y, a, b);
+        } else if (a.l > mid) {
+            return query(x++, y, a, b);
+        } else {
+            return max(query(x--, y, {a.l, mid}, b),
+                       query(x++, y, {mid + 1, a.r}, b));
+        }
+    }
+} tree;\end{lstlisting}
 \subsection{树状数组求逆序对}
 \begin{lstlisting}
 BITree t;
@@ -1746,36 +1704,38 @@ struct PDSU {
 \clearpage\section{图论}
 \subsection{Graph}
 \begin{lstlisting}
-#define forg(i, h, eg) for(int i = (h); ~i; i = (eg[i]).nxt)
+#define forg(i, h, eg) for(int i = (h); ~i; i = (eg[i]).first)
 
 struct Edge {
-    int e, nxt;
-    ll v;
-    Edge() = default;
-    Edge(int a, ll b, int c = 0) : e(a), v(b), nxt(c) {}
-
-    bool operator<(const Edge &a) const {
-        return (a.v == v ? e < a.e : v < a.v);
-    }
+    int to;
+    ll w;
 };
 
+inline bool operator<(Edge a, Edge b) {
+    return a.w < b.w;
+}
+
 const ll INF = ll(1e11);
-const int N = int(1e5 + 10);
-const int M = int(3e5 + 10);
+const int N = int(1e6 + 10);
+const int M = int(2e6 + 10);
 
 struct Graph {
-    Edge eg[M];
+    pair<int, Edge> eg[M];
     int head[N];
-    int cnt;
+    int tot;
 
     void init(int n) {
         memset(head, -1, sizeof(int) * ++n);
-        cnt = 0;
+        tot = 0;
     }
 
-    inline void addEdge(int x, int y, ll v = 0) {
-        eg[cnt] = Edge(y, v, head[x]);
-        head[x] = cnt++;
+    inline void addEdge(int x, Edge g) {
+        eg[tot] = {head[x], g};
+        head[x] = tot++;
+    }
+    
+    Edge &operator[](int p) {
+        return eg[p].second;
     }
 } gh;\end{lstlisting}
 \subsection{Dijkstra}
@@ -1888,6 +1848,22 @@ bool spfa(int n, int start) {
 \end{lstlisting}
 \subsection{Dinic}
 \begin{lstlisting}
+struct Graph {
+    pair<int, Edge> eg[M];
+    int head[N];
+    int tot;
+
+    void init(int n) {
+        memset(head, -1, sizeof(int) * ++n);
+        tot = 0;
+    }
+
+    inline void addEdge(int x, Edge g) {
+        eg[tot] = {head[x], g};
+        head[x] = tot++;
+    }
+} gh;
+
 struct Dinic {
     Graph gh;
     // 点的范围[0, n)
@@ -1895,18 +1871,19 @@ struct Dinic {
     // 弧优化
     int cur[N], dis[N];
 
-    Dinic(){};
+    Dinic() {};
 
     // 设置N
     void init(int _n) {
-        n = _n;
+        n = _n + 1;
         gh.init(n);
     }
 
     // 加流量
     void addFlow(int x, int y, ll f) {
-        gh.addEdge(x, y, f);
-        gh.addEdge(y, x, 0);
+        printf("%d->%d: %lld\n", x, y, f);
+        gh.addEdge(x, {y, f});
+        gh.addEdge(y, {x, 0});
     }
 
     bool bfs(int s, int e) {
@@ -1918,10 +1895,12 @@ struct Dinic {
         q[r++] = s;
         while (l < r) {
             int f = q[l++];
-            for (int i = gh.head[f]; ~i; i = gh.eg[i].nxt) {
-                if (gh.eg[i].v > 0 && dis[gh.eg[i].e] == -1) {
-                    dis[gh.eg[i].e] = dis[f] + 1;
-                    q[r++] = gh.eg[i].e;
+            for (int i = gh.head[f]; ~i; i = gh.eg[i].first) {
+                auto &eg = gh.eg[i].second;
+                int to = eg.to;
+                if (eg.w > 0 && dis[to] == -1) {
+                    dis[to] = dis[f] + 1;
+                    q[r++] = to;
                 }
             }
         }
@@ -1933,12 +1912,12 @@ struct Dinic {
             return mx;
         }
         ll flow = 0;
-        for (int &k = cur[s]; ~k; k = gh.eg[k].nxt) {
-            auto &eg = gh.eg[k];
+        for (int &k = cur[s]; ~k; k = gh.eg[k].first) {
+            auto &eg = gh.eg[k].second;
             ll a;
-            if (eg.v > 0 && dis[eg.e] == dis[s] + 1 && (a = dfs(eg.e, e, min(eg.v, mx)))) {
-                eg.v -= a;
-                gh.eg[k ^ 1].v += a;
+            if (eg.w > 0 && dis[eg.to] == dis[s] + 1 && (a = dfs(eg.to, e, min(eg.w, mx)))) {
+                eg.w -= a;
+                gh.eg[k ^ 1].second.w += a;
                 flow += a;
                 mx -= a;
                 if (mx <= 0) break;
@@ -2055,9 +2034,9 @@ struct Edge {
     Edge(int a, ll b, ll c, int d = 0) : e(a), flow(b), cost(c), nxt(d) {}
 };
 
-const ll INF = 1000000;
-const int N = int(1e5 + 10);
-const int M = int(1e5 + 10);
+const ll INF = ll(1e15);
+const int N = int(2e3 + 10);
+const int M = int(1e6 + 10);
 
 //前向星
 struct Graph {
@@ -2096,7 +2075,7 @@ struct MinCostMaxFlow {
 
     // 该pre存的是边
     int pre[N];
-    int dis[N];
+    ll dis[N];
     bool vis[N];
 
     bool spfa(int s, int e) {
@@ -2147,6 +2126,18 @@ struct MinCostMaxFlow {
 
 } network;
 
+const int N = int(2e3 + 10);
+const ll INF = ll(1e15);
+
+struct Edge {
+    int e, nxt;
+    ll flow, cost;
+
+    Edge() {};
+
+    Edge(int a, ll b, ll c, int d = 0) : e(a), flow(b), cost(c), nxt(d) {}
+};
+
 // vector图存
 struct MinCostMaxFlow {
     vector<Edge> g[N];
@@ -2155,47 +2146,43 @@ struct MinCostMaxFlow {
 
     // 设置N
     void init(int _n) {
+        n = _n + 1;
         rep(i, 0, n) {
             g[i].clear();
         }
-        n = _n + 1;
     }
 
     // 加流量，反向是负的花费
-    void addFlow(int x, int y, int f, int c) {
+    void addFlow(int x, int y, ll f, ll c) {
         g[x].push_back(Edge(y, f, c, g[y].size()));
         g[y].push_back(Edge(x, 0, -c, g[x].size() - 1));
     }
 
     // 该pre存的是(点,边)
     pii pre[N];
-    int dis[N];
+    ll dis[N];
     bool vis[N];
-    int h[N];
-
-    int cnt = 0;
+    ll h[N];
 
     bool bfs(int s, int e) {
-        priority_queue<pii, vector<pii>, greater<pii>> q;
-        for (int i = 0; i < n; i++) {
-            dis[i] = INF;
-            vis[i] = false;
-            pre[i] = pii(-1, -1);
-        }
+        using pli = pair<ll, int>;
+        priority_queue<pli, vector<pli>, greater<pli>> q;
+        fill_n(dis, n, INF);
+        fill_n(vis, n, false);
+        fill_n(pre, n, pii(-1, -1));
         dis[s] = 0;
         q.push(pii(0, s));
         while (!q.empty()) {
-            pii f = q.top();
+            pli f = q.top();
             int u = f.second;
             q.pop();
             if (f.first != dis[u]) continue;
-            for (int i = 0; i < sz(g[u]); i++) {
+            for (int i = 0; i < g[u].size(); i++) {
                 auto &eg = g[u][i];
                 if (eg.flow == 0) continue;
                 int v = eg.e;
-                int cost = eg.cost + dis[u] + h[u] - h[v];
+                ll cost = eg.cost + dis[u] + h[u] - h[v];
                 if (dis[v] > cost) {
-                    cnt++;
                     dis[v] = cost;
                     pre[v] = pii(u, i);
                     q.push(pii(dis[v], v));
@@ -2208,13 +2195,12 @@ struct MinCostMaxFlow {
         return pre[e].second != -1;
     }
 
-    pii cal(int s, int e, int limit) {
-        int flow = 0, cost = 0;
-        memset(h, 0, sizeof(int) * n);
-        cnt = 0;
+    pll cal(int s, int e, ll limit) {
+        ll flow = 0, cost = 0;
+        fill_n(h, n, 0);
         while (limit) {
             if (!bfs(s, e)) break;
-            int f = INF;
+            ll f = INF;
             for (int i = e; ~pre[i].second; i = pre[i].first) {
                 f = min(f, g[pre[i].first][pre[i].second].flow);
             }
@@ -2228,8 +2214,7 @@ struct MinCostMaxFlow {
         }
         return make_pair(flow, cost);
     }
-
-} network;  \end{lstlisting}
+} network;\end{lstlisting}
 \subsection{ISAP}
 \begin{lstlisting}
 struct ISAP {
@@ -2342,7 +2327,6 @@ struct TreeChain {
     int deep[N]; // 深度
     int num[N]; // 儿子节点数（包括自己）
 
-
     int p[N]; // 在线段树中的ID，
     int fp[N]; // 线段树中ID对应的点
     int tot;
@@ -2351,8 +2335,9 @@ struct TreeChain {
         num[u] = 1;
         deep[u] = d;
         fa[u] = pre;
-        for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
-            int v = gh.eg[i].e;
+        son[u] = -1;
+        for (int i = gh.head[u]; ~i; i = gh.eg[i].first) {
+            int v = gh.eg[i].second.to;
             if (v == pre) continue;
             dfs(v, u, d + 1);
             num[u] += num[v];
@@ -2368,60 +2353,76 @@ struct TreeChain {
         fp[p[u]] = u;
         if (son[u] == -1) return;
         getpos(son[u], sp);
-        for (int i = gh.head[u]; ~i; i = gh.eg[i].nxt) {
-            int v = gh.eg[i].e;
+        for (int i = gh.head[u]; ~i; i = gh.eg[i].first) {
+            int v = gh.eg[i].second.to;
             if (v == son[u] || v == fa[u]) continue;
             getpos(v, v);
         }
     }
-
-    void build(int start, int root, int n) {
-        memset(son, -1, sizeof(int) * ++n);
-        tot = start; // start是线段树中的ID起始数值
-        dfs(root, 0, 0);
+    
+    // start是线段树中的ID起始数值
+    void build(int n, int root = 1, int start = 1) {
+        tot = start;
+        // deep起始值如果是0，则遇到数据错误超出这棵树，有可能死循环
+        // dfs(root, 0, 0);
+        dfs(root, 0, 1);
         getpos(root, root);
     }
-} treec;
+
+    int lca(int u, int v) {
+        int f1 = top[u];
+        int f2 = top[v];
+        while (f1 != f2) {
+            if (deep[f1] < deep[f2]) {
+                swap(f1, f2);
+                swap(u, v);
+            }
+            u = fa[f1];
+            f1 = top[u];
+        }
+        return deep[u] < deep[v] ? u : v;
+    }
+} tch;
 
 // 树状数组，如果无需在线查询可以使用差分树
 BITree tree;
 
 // 点权修改
 void change1(int u, int v, ll val) {
-    int f1 = treec.top[u];
-    int f2 = treec.top[v];
+    int f1 = tch.top[u];
+    int f2 = tch.top[v];
     while (f1 != f2) {
-        if (treec.deep[f1] < treec.deep[f2]) {
+        if (tch.deep[f1] < tch.deep[f2]) {
             swap(f1, f2);
             swap(u, v);
         }
-        tree1.update(treec.p[f1], treec.p[u], val);
-        u = treec.fa[f1];
-        f1 = treec.top[u];
+        tree1.update(tch.p[f1], tch.p[u], val);
+        u = tch.fa[f1];
+        f1 = tch.top[u];
     }
-    if (treec.deep[u] > treec.deep[v]) {
+    if (tch.deep[u] > tch.deep[v]) {
         swap(u, v);
     }
-    tree1.update(treec.p[u], treec.p[v], val);
+    tree1.update(tch.p[u], tch.p[v], val);
 }
 
 // 边权修改
 void change2(int u, int v, ll val) {
-    int f1 = treec.top[u];
-    int f2 = treec.top[v];
+    int f1 = tch.top[u];
+    int f2 = tch.top[v];
     while (f1 != f2) {
-        if (treec.deep[f1] < treec.deep[f2]) {
+        if (tch.deep[f1] < tch.deep[f2]) {
             swap(f1, f2);
             swap(u, v);
         }
-        tree2.update(treec.p[f1], treec.p[u], val);
-        u = treec.fa[f1];
-        f1 = treec.top[u];
+        tree2.update(tch.p[f1], tch.p[u], val);
+        u = tch.fa[f1];
+        f1 = tch.top[u];
     }
-    if (treec.deep[u] > treec.deep[v]) {
+    if (tch.deep[u] > tch.deep[v]) {
         swap(u, v);
     }
-    tree2.update(treec.p[treec.son[u]], treec.p[v], val);
+    tree2.update(tch.p[tch.son[u]], tch.p[v], val);
 }\end{lstlisting}
 \subsection{倍增LCA}
 \begin{lstlisting}
@@ -2655,6 +2656,59 @@ int MaxMatch(int n) {
         }
     }
     return rst;
+}\end{lstlisting}
+\subsection{Kuhn-Munkres}
+\begin{lstlisting}
+const int N = 1005;
+const ll INF = ll(2e11);
+
+ll cost[N][N];
+// lx, ly 表示当前期望值, slack是得到链接的期望值
+ll lx[N], ly[N], slack[N];
+// prey->alternating tree, match是y->x的链接
+int prey[N], match[N];
+bool vy[N]; // 是否已经变化的点
+
+void augment(int n, int root) {
+    fill_n(vy + 1, n, false);
+    fill_n(slack + 1, n, INF);
+    int py = 0;
+    match[py] = root;
+    do {
+        vy[py] = true;
+        int x = match[py], yy = 0;
+        ll delta = INF;
+        for (int y = 1; y <= n; y++) {
+            if (vy[y]) continue;
+            ll w = lx[x] + ly[y] - cost[x][y];
+            if (w < slack[y])
+                slack[y] = w, prey[y] = py;
+            if (slack[y] < delta) delta = slack[y], yy = y;
+        }
+        for (int y = 0; y <= n; y++) {
+            if (vy[y])
+                lx[match[y]] -= delta, ly[y] += delta;
+            else
+                slack[y] -= delta;
+        }
+        py = yy;
+    } while (match[py] != -1);
+    do {
+        int pre = prey[py];
+        match[py] = match[pre], py = pre;
+    } while (py);
+}
+
+ll KM(int n) {
+    fill_n(match + 1, n, -1);
+    fill_n(ly + 1, n, 0);
+    for (int i = 1; i <= n; i++) {
+        lx[i] = *max_element(cost[i] + 1, cost[i] + n + 1);
+    }
+    ll ans = 0;
+    for (int root = 1; root <= n; root++) augment(n, root);
+    for (int i = 1; i <= n; i++) ans += lx[i], ans += ly[i];
+    return ans;
 }\end{lstlisting}
 \clearpage\section{博弈}
 \subsection{GameProblem}
@@ -3525,9 +3579,22 @@ void IFWT(int p[], int n) { // 如果要取模运算记得-x+MOD,*inv
         }
     }
 }\end{lstlisting}
-\subsection{FFT}
+\subsection{FFT-NTT}
 \begin{lstlisting}
-inline int lowbit(int x) { return x & -x; }
+const int N = int(1e6 + 48);
+const int MOD = 998244353;
+const int pr = 3;
+const int phi = MOD - 1;
+const int sq2 = 116195171; 
+
+int fpow(ll a, ll k) {
+    ll c = 1;
+    for (; k; k >>= 1) {
+        if (k & 1) (c *= a) %= MOD;
+        (a *= a) %= MOD;
+    }
+    return c;
+}
 
 int calc(int n) {
     int k = 0;
@@ -3535,33 +3602,51 @@ int calc(int n) {
     return k;
 }
 
-// FFT
-const double pi = acos(-1.0);
+int rk[N], rn = 0;
 
-const int N = (1 << 20);
-using Complex = complex<double>;
-
-void change(Complex p[], int n) {
+template<class T>
+void change(T p[], int n) {
     int k = calc(n);
-    n = 1 << k;
-    vector<int> r(n, 0);
-    for (int i = 0; i < n; i++) r[i] = (r[i >> 1] >> 1) | ((i & 1) << (k - 1));
-    for (int i = 0; i < n; i++) if (i < r[i]) swap(p[i], p[r[i]]);
+    if (rn != n) {
+        rn = n;
+        for (int i = 0; i < n; i++) rk[i] = (rk[i >> 1] >> 1) | ((i & 1) << (k - 1));
+    }
+    for (int i = 0; i < n; i++) if (i < rk[i]) swap(p[i], p[rk[i]]);
 }
 
-void FFT(Complex p[], int n, int type) {
+// FFT
+const double pi = acos(-1.0);
+using Complex = complex<double>;
+
+void FFT(Complex p[], int n, int opt) {
     change(p, n);
-    for (int mid = 1; mid < n; mid <<= 1) { //待合并区间的长度的一半
-        Complex wn(cos(pi / mid), type * sin(pi / mid)); //单位根
-        for (int R = mid << 1, j = 0; j < n; j += R) { //R是区间的长度，j表示前已经到哪个位置了
+    for (int i = 1; i < n; i <<= 1) { //待合并区间的长度的一半
+        Complex wn(cos(pi / i), opt * sin(pi / i)); //单位根
+        for (int R = i << 1, j = 0; j < n; j += R) { //R是区间的长度，j表示前已经到哪个位置了
             Complex w(1, 0); //幂
-            for (int k = 0; k < mid; k++, w = w * wn) { //枚举左半部分
-                Complex x = p[j + k], y = w * p[j + mid + k]; //蝴蝶效应
+            for (int k = 0; k < i; ++k, w = w * wn) { //枚举左半部分
+                Complex x = p[j + k], y = w * p[j + i + k]; //蝴蝶效应
                 p[j + k] = x + y;
-                p[j + mid + k] = x - y;
+                p[j + i + k] = x - y;
             }
         }
     }
+}
+
+void NTT(ll p[], int n, int opt) {
+    change(p, n);
+    for (int i = 1; i < n; i <<= 1) {
+        ll wn = fpow(pr, phi / (i << 1));
+        for (int R = i << 1, j = 0; j < n; j += R) {
+            ll w = 1;
+            for (int k = 0; k < i; ++k, w = w * wn % MOD) {
+                ll x = p[j + k], y = w * p[i + j + k] % MOD;
+                p[j + k] = (x + y) % MOD;
+                p[i + j + k] = (x - y + MOD) % MOD;
+            }
+        }
+    }
+    if (opt == -1)reverse(p + 1, p + n);
 }\end{lstlisting}
 \subsection{圆上整点}
 \begin{lstlisting}
@@ -3612,6 +3697,7 @@ int calc(vector<pll> &p, ll r) {
 ll inv[N] = {1, 1}, fac[N] = {1, 1}, ifac[N] = {1, 1};
 // 线性求逆元
 void init() {
+	// 如果用的Int记得下面inv[i] = 1ll*...
     for (int i = 2; i < N; i++) {
         inv[i] = (MOD - (MOD / i)) * inv[MOD % i] % MOD;
         fac[i] = fac[i - 1] * i % MOD;
